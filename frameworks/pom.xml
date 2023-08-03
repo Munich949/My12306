@@ -12,7 +12,11 @@
     <artifactId>index12306-frameworks</artifactId>
     <packaging>pom</packaging>
     <modules>
+        <module>base</module>
+        <module>bizs</module>
+        <module>convention</module>
         <module>designpattern</module>
+        <module>common</module>
     </modules>
 
     <properties>

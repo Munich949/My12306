@@ -7,10 +7,9 @@
         <groupId>com.dlnu.index12306</groupId>
         <artifactId>index12306-frameworks</artifactId>
         <version>0.0.1-SNAPSHOT</version>
-        <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>index12306-bizs-spring-boot-starter</artifactId>
+    <artifactId>index12306-common-spring-boot-starter</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -18,6 +17,23 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <packaging>pom</packaging>
+    <dependencies>
+        <dependency>
+            <groupId>com.dlnu.index12306</groupId>
+            <artifactId>index12306-base-spring-boot-starter</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.dozermapper</groupId>
+            <artifactId>dozer-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.dlnu.index12306</groupId>
+            <artifactId>index12306-designpattern-spring-boot-starter</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 
 </project>
