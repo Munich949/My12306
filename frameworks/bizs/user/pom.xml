@@ -7,7 +7,6 @@
         <groupId>com.dlnu.index12306</groupId>
         <artifactId>My12306</artifactId>
         <version>0.0.1-SNAPSHOT</version>
-        <relativePath>../../../pom.xml</relativePath>
     </parent>
 
     <artifactId>index12306-user-spring-boot-stater</artifactId>

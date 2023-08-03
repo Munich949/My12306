@@ -17,6 +17,8 @@
         <module>convention</module>
         <module>designpattern</module>
         <module>common</module>
+        <module>database</module>
+        <module>distributedid</module>
     </modules>
 
     <properties>
