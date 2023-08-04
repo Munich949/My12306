@@ -20,6 +20,9 @@
         <module>database</module>
         <module>distributedid</module>
         <module>log</module>
+        <module>idempotent</module>
+        <module>cache</module>
+        <module>web</module>
     </modules>
 
     <properties>
