@@ -1,6 +1,6 @@
-package com.dlnu.index12306.framework.stater.user.config;
+package com.dlnu.index12306.framework.starter.user.config;
 
-import com.dlnu.index12306.framework.stater.user.core.UserTransmitFilter;
+import com.dlnu.index12306.framework.starter.user.core.UserTransmitFilter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;

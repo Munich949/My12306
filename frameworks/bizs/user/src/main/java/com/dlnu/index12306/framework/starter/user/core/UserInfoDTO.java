@@ -1,4 +1,4 @@
-package com.dlnu.index12306.framework.stater.user.core;
+package com.dlnu.index12306.framework.starter.user.core;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
