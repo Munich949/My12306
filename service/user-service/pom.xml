@@ -37,6 +37,12 @@
             <artifactId>index12306-database-spring-boot-starter</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.dlnu.index12306</groupId>
+            <artifactId>index12306-user-spring-boot-stater</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- jjwt start -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
