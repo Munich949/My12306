@@ -183,6 +183,7 @@ public class UserLoginServiceImpl implements UserLoginService {
         return BeanUtil.convert(requestParam, UserRegisterRespDTO.class);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public void deletion(UserDeletionReqDTO requestParam) {
         String username = UserContext.getUsername();
