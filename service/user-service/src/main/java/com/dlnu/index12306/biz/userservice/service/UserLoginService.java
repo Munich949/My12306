@@ -1,5 +1,6 @@
 package com.dlnu.index12306.biz.userservice.service;
 
+import com.dlnu.index12306.biz.userservice.dto.req.UserDeletionReqDTO;
 import com.dlnu.index12306.biz.userservice.dto.req.UserLoginReqDTO;
 import com.dlnu.index12306.biz.userservice.dto.req.UserRegisterReqDTO;
 import com.dlnu.index12306.biz.userservice.dto.resp.UserLoginRespDTO;
@@ -48,4 +49,11 @@ public interface UserLoginService {
      * @return 用户注册返回结果
      */
     UserRegisterRespDTO register(UserRegisterReqDTO requestParam);
+
+    /**
+     * 注销用户
+     *
+     * @param requestParam 注销用户入参
+     */
+    void deletion(UserDeletionReqDTO requestParam);
 }

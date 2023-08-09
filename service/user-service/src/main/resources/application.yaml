@@ -27,6 +27,7 @@ mybatis-plus:
       logic-delete-value: 1
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  type-aliases-package: com.dlnu.index12306.biz.userservice.dao.entity
 
 framework:
   fastjson:

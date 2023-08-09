@@ -5,37 +5,39 @@ import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.dlnu.index12306.biz.userservice.common.enums.UserChainMarkEnum;
-import com.dlnu.index12306.biz.userservice.dao.entity.UserDO;
-import com.dlnu.index12306.biz.userservice.dao.entity.UserMailDO;
-import com.dlnu.index12306.biz.userservice.dao.entity.UserPhoneDO;
-import com.dlnu.index12306.biz.userservice.dao.entity.UserReuseDO;
-import com.dlnu.index12306.biz.userservice.dao.mapper.UserMailMapper;
-import com.dlnu.index12306.biz.userservice.dao.mapper.UserMapper;
-import com.dlnu.index12306.biz.userservice.dao.mapper.UserPhoneMapper;
-import com.dlnu.index12306.biz.userservice.dao.mapper.UserReuseMapper;
+import com.dlnu.index12306.biz.userservice.dao.entity.*;
+import com.dlnu.index12306.biz.userservice.dao.mapper.*;
+import com.dlnu.index12306.biz.userservice.dto.req.UserDeletionReqDTO;
 import com.dlnu.index12306.biz.userservice.dto.req.UserLoginReqDTO;
 import com.dlnu.index12306.biz.userservice.dto.req.UserRegisterReqDTO;
 import com.dlnu.index12306.biz.userservice.dto.resp.UserLoginRespDTO;
+import com.dlnu.index12306.biz.userservice.dto.resp.UserQueryRespDTO;
 import com.dlnu.index12306.biz.userservice.dto.resp.UserRegisterRespDTO;
 import com.dlnu.index12306.biz.userservice.service.UserLoginService;
+import com.dlnu.index12306.biz.userservice.service.UserService;
 import com.dlnu.index12306.framework.starter.cache.DistributedCache;
 import com.dlnu.index12306.framework.starter.common.toolkit.BeanUtil;
 import com.dlnu.index12306.framework.starter.convention.exception.ClientException;
 import com.dlnu.index12306.framework.starter.convention.exception.ServiceException;
 import com.dlnu.index12306.framework.starter.designpattern.chain.AbstractChainContext;
+import com.dlnu.index12306.framework.starter.user.core.UserContext;
 import com.dlnu.index12306.framework.starter.user.core.UserInfoDTO;
 import com.dlnu.index12306.framework.starter.user.toolkit.JWTUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import static com.dlnu.index12306.biz.userservice.common.constant.RedisKeyConstant.USER_DELETION;
 import static com.dlnu.index12306.biz.userservice.common.constant.RedisKeyConstant.USER_REGISTER_REUSE_SHARDING;
 import static com.dlnu.index12306.biz.userservice.common.enums.UserRegisterErrorCodeEnum.*;
 import static com.dlnu.index12306.biz.userservice.toolkit.UserReuseUtil.hashShardingIdx;
@@ -45,10 +47,13 @@ import static com.dlnu.index12306.biz.userservice.toolkit.UserReuseUtil.hashShar
 @RequiredArgsConstructor
 public class UserLoginServiceImpl implements UserLoginService {
 
+    private final UserService userService;
     private final UserMapper userMapper;
     private final UserPhoneMapper userPhoneMapper;
     private final UserMailMapper userMailMapper;
     private final UserReuseMapper userReuseMapper;
+    private final UserDeletionMapper userDeletionMapper;
+    private final RedissonClient redissonClient;
     private final DistributedCache distributedCache;
     private final AbstractChainContext<UserRegisterReqDTO> abstractChainContext;
     private final RBloomFilter<String> userRegisterCachePenetrationBloomFilter;
@@ -176,5 +181,48 @@ public class UserLoginServiceImpl implements UserLoginService {
         // 将已注册的用户名加入布隆过滤器
         userRegisterCachePenetrationBloomFilter.add(username);
         return BeanUtil.convert(requestParam, UserRegisterRespDTO.class);
+    }
+
+    @Override
+    public void deletion(UserDeletionReqDTO requestParam) {
+        String username = UserContext.getUsername();
+        if (!Objects.equals(username, requestParam.getUsername())) {
+            // 此处严谨来说，需要上报风控中心进行异常检测
+            throw new ClientException("注销账号与登录账号不一致");
+        }
+        RLock lock = redissonClient.getLock(USER_DELETION + requestParam.getUsername());
+        lock.lock();
+        try {
+            UserQueryRespDTO userQueryRespDTO = userService.queryUserByUsername(username);
+            UserDeletionDO userDeletionDO = UserDeletionDO.builder()
+                    .idType(userQueryRespDTO.getIdType())
+                    .idCard(userQueryRespDTO.getIdCard())
+                    .build();
+            // 插入用户注销表
+            userDeletionMapper.insert(userDeletionDO);
+            UserDO userDO = new UserDO();
+            userDO.setDeletionTime(System.currentTimeMillis());
+            userDO.setUsername(username);
+            // MyBatis Plus 不支持修改语句变更 del_flag 字段
+            // 从用户表中删除
+            userMapper.deletionUser(userDO);
+            // 如果注册时也填写了邮箱，也要从用户邮箱表中删除
+            if (StrUtil.isNotBlank(userQueryRespDTO.getMail())) {
+                UserMailDO userMailDO = UserMailDO.builder()
+                        .mail(userQueryRespDTO.getMail())
+                        .deletionTime(System.currentTimeMillis())
+                        .build();
+                userMailMapper.deletionUser(userMailDO);
+            }
+            // 删除缓存
+            distributedCache.delete(UserContext.getToken());
+            // 插入用户复用表
+            userReuseMapper.insert(new UserReuseDO(username));
+            StringRedisTemplate instance = (StringRedisTemplate) distributedCache.getInstance();
+            // 加入可复用的 Redis Set 中
+            instance.opsForSet().add(USER_REGISTER_REUSE_SHARDING + hashShardingIdx(username), username);
+        } finally {
+            lock.unlock();
+        }
     }
 }
