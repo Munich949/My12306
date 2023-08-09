@@ -59,6 +59,7 @@
         <module>frameworks/bizs</module>
         <module>frameworks/bizs/user</module>
         <module>dependencies</module>
+        <module>service</module>
     </modules>
 
 </project>
