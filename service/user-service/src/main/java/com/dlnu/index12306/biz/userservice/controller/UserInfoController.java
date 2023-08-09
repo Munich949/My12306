@@ -2,6 +2,7 @@ package com.dlnu.index12306.biz.userservice.controller;
 
 import com.dlnu.index12306.biz.userservice.dto.req.UserDeletionReqDTO;
 import com.dlnu.index12306.biz.userservice.dto.req.UserRegisterReqDTO;
+import com.dlnu.index12306.biz.userservice.dto.req.UserUpdateReqDTO;
 import com.dlnu.index12306.biz.userservice.dto.resp.UserRegisterRespDTO;
 import com.dlnu.index12306.biz.userservice.service.UserLoginService;
 import com.dlnu.index12306.biz.userservice.service.UserService;
@@ -37,6 +38,15 @@ public class UserInfoController {
     @PostMapping("/api/user-service/register")
     public Result<UserRegisterRespDTO> register(@RequestBody @Valid UserRegisterReqDTO requestParam) {
         return Results.success(userLoginService.register(requestParam));
+    }
+
+    /**
+     * 修改用户
+     */
+    @PostMapping("/api/user-service/update")
+    public Result<Void> update(@RequestBody @Valid UserUpdateReqDTO requestParam) {
+        userService.update(requestParam);
+        return Results.success();
     }
 
     /**

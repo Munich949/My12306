@@ -1,11 +1,16 @@
 package com.dlnu.index12306.biz.userservice.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.dlnu.index12306.biz.userservice.dao.entity.UserDO;
 import com.dlnu.index12306.biz.userservice.dao.entity.UserDeletionDO;
+import com.dlnu.index12306.biz.userservice.dao.entity.UserMailDO;
 import com.dlnu.index12306.biz.userservice.dao.mapper.UserDeletionMapper;
+import com.dlnu.index12306.biz.userservice.dao.mapper.UserMailMapper;
 import com.dlnu.index12306.biz.userservice.dao.mapper.UserMapper;
+import com.dlnu.index12306.biz.userservice.dto.req.UserUpdateReqDTO;
 import com.dlnu.index12306.biz.userservice.dto.resp.UserQueryRespDTO;
 import com.dlnu.index12306.biz.userservice.service.UserService;
 import com.dlnu.index12306.framework.starter.common.toolkit.BeanUtil;
@@ -13,6 +18,7 @@ import com.dlnu.index12306.framework.starter.convention.exception.ClientExceptio
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -20,6 +26,7 @@ import java.util.Optional;
 public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
+    private final UserMailMapper userMailMapper;
     private final UserDeletionMapper userDeletionMapper;
 
     @Override
@@ -52,5 +59,24 @@ public class UserServiceImpl implements UserService {
         // TODO 此处应该先查缓存
         Long deletionCount = userDeletionMapper.selectCount(queryWrapper);
         return Optional.ofNullable(deletionCount).map(Long::intValue).orElse(0);
+    }
+
+    @Override
+    public void update(UserUpdateReqDTO requestParam) {
+        UserQueryRespDTO userQueryRespDTO = queryUserByUsername(requestParam.getUsername());
+        UserDO userDO = BeanUtil.convert(userQueryRespDTO, UserDO.class);
+        LambdaUpdateWrapper<UserDO> userUpdateWrapper = Wrappers.lambdaUpdate(UserDO.class)
+                .eq(UserDO::getUsername, requestParam.getUsername());
+        userMapper.update(userDO, userUpdateWrapper);
+        if (StrUtil.isNotBlank(requestParam.getMail()) && !Objects.equals(requestParam.getMail(), userQueryRespDTO.getMail())) {
+            LambdaUpdateWrapper<UserMailDO> updateWrapper = Wrappers.lambdaUpdate(UserMailDO.class)
+                    .eq(UserMailDO::getMail, userQueryRespDTO.getMail());
+            userMailMapper.delete(updateWrapper);
+            UserMailDO userMailDO = UserMailDO.builder()
+                    .mail(requestParam.getMail())
+                    .username(requestParam.getUsername())
+                    .build();
+            userMailMapper.insert(userMailDO);
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.dlnu.index12306.biz.userservice.service;
 
+import com.dlnu.index12306.biz.userservice.dto.req.UserUpdateReqDTO;
 import com.dlnu.index12306.biz.userservice.dto.resp.UserQueryRespDTO;
 import jakarta.validation.constraints.NotEmpty;
 
@@ -32,4 +33,11 @@ public interface UserService {
      * @return 注销次数
      */
     Integer queryUserDeletionNum(Integer idType, String idCard);
+
+    /**
+     * 根据用户 ID 修改用户信息
+     *
+     * @param requestParam 用户信息入参
+     */
+    void update(UserUpdateReqDTO requestParam);
 }
