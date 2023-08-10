@@ -207,6 +207,11 @@ public class UserLoginServiceImpl implements UserLoginService {
             // MyBatis Plus 不支持修改语句变更 del_flag 字段
             // 从用户表中删除
             userMapper.deletionUser(userDO);
+            UserPhoneDO userPhoneDO = UserPhoneDO.builder()
+                    .phone(userQueryRespDTO.getPhone())
+                    .deletionTime(System.currentTimeMillis())
+                    .build();
+            userPhoneMapper.deletionUser(userPhoneDO);
             // 如果注册时也填写了邮箱，也要从用户邮箱表中删除
             if (StrUtil.isNotBlank(userQueryRespDTO.getMail())) {
                 UserMailDO userMailDO = UserMailDO.builder()
