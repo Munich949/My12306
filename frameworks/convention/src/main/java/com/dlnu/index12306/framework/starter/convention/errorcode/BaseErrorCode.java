@@ -1,5 +1,8 @@
 package com.dlnu.index12306.framework.starter.convention.errorcode;
 
+/**
+ * 错误码具体实现枚举类
+ */
 public enum BaseErrorCode implements IErrorCode {
 
     // ========== 一级宏观错误码 客户端错误 ==========
@@ -21,7 +24,6 @@ public enum BaseErrorCode implements IErrorCode {
 
     // ========== 一级宏观错误码 系统执行出错 ==========
     SERVICE_ERROR("B000001", "系统执行出错"),
-    
     // ========== 二级宏观错误码 系统执行超时 ==========
     SERVICE_TIMEOUT_ERROR("B000100", "系统执行超时"),
 

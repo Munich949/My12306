@@ -8,6 +8,10 @@ import com.dlnu.index12306.framework.starter.convention.errorcode.IErrorCode;
  */
 public class RemoteException extends AbstractException {
 
+    public RemoteException(IErrorCode errorCode) {
+        this(null, null, errorCode);
+    }
+
     public RemoteException(String message) {
         this(message, null, BaseErrorCode.REMOTE_ERROR);
     }
