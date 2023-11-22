@@ -1,7 +1,7 @@
-package com.dlnu.index12306.frameworks.starter.user.toolkit;
+package com.dlnu.index12306.framework.starter.user.toolkit;
 
 import com.alibaba.fastjson2.JSON;
-import com.dlnu.index12306.frameworks.starter.user.core.UserInfoDTO;
+import com.dlnu.index12306.framework.starter.user.core.UserInfoDTO;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;

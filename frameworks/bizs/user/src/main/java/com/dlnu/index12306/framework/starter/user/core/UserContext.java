@@ -1,4 +1,4 @@
-package com.dlnu.index12306.frameworks.starter.user.core;
+package com.dlnu.index12306.framework.starter.user.core;
 
 import com.alibaba.ttl.TransmittableThreadLocal;
 
