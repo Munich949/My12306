@@ -4,7 +4,6 @@ import java.io.Serializable;
 
 /**
  * Builder 模式抽象接口
- *
  */
 public interface Builder<T> extends Serializable {
 

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
  */
 public final class AbstractChainContext<T> implements CommandLineRunner {
 
+    // 存储某一类责任链组件
     private final Map<String, List<AbstractChainHandler>> abstractChainHandlerContainer = new HashMap<>();
 
     /**
@@ -22,6 +23,7 @@ public final class AbstractChainContext<T> implements CommandLineRunner {
      * @param requestParam 请求参数
      */
     public void handler(String mark, T requestParam) {
+        // 依次执行某一个 mark 下的所有责任链组件
         List<AbstractChainHandler> abstractChainHandlers = abstractChainHandlerContainer.get(mark);
         if (CollectionUtils.isEmpty(abstractChainHandlers)) {
             throw new RuntimeException(String.format("[%s] Chain of Responsibility ID is undefined.", mark));
@@ -29,6 +31,11 @@ public final class AbstractChainContext<T> implements CommandLineRunner {
         abstractChainHandlers.forEach(each -> each.handler(requestParam));
     }
 
+    /**
+     * 收集 ApplicationContextHolder 中所有责任链组件 Bean 并封装到容器中
+     * @param args
+     * @throws Exception
+     */
     @Override
     public void run(String... args) throws Exception {
         Map<String, AbstractChainHandler> chainFilterMap = ApplicationContextHolder

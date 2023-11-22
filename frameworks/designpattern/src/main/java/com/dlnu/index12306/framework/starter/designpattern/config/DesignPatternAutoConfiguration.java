@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Bean;
 
 /**
  * 设计模式自动装配
- *
  */
 @ImportAutoConfiguration(ApplicationBaseAutoConfiguration.class)
 public class DesignPatternAutoConfiguration {
