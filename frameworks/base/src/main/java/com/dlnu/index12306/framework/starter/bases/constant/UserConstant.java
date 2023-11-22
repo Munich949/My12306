@@ -2,9 +2,9 @@ package com.dlnu.index12306.framework.starter.bases.constant;
 
 /**
  * 用户常量
- * 这些常量不止在用户组件库中使用。
+ * <p>这些常量不止在用户组件库中使用。
  * 因为在网关中，将用户 Token 进行解析，并放到 HTTP Header 中，最终放到用户请求上下文，也需要用到这些用户常量。
- * 所以将这些用户常量封装到基础组件库中。
+ * 所以将这些用户常量封装到基础组件库中。</p>
  */
 public final class UserConstant {
 
