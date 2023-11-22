@@ -11,23 +11,36 @@ import java.util.concurrent.*;
  */
 public final class ThreadPoolBuilder implements Builder<ThreadPoolExecutor> {
 
+    // 线程池的核心线程数，默认值为计算得到的CPU核心数的20%
     private int corePoolSize = calculateCoreNum();
 
+    // 线程池的最大线程数，默认值为核心线程数加上核心线程数的一半。
     private int maximumPoolSize = corePoolSize + (corePoolSize >> 1);
 
+    // 线程的空闲时间，超过该时间将被回收
     private long keepAliveTime = 30000L;
 
+    // 空闲时间的单位
     private TimeUnit timeUnit = TimeUnit.MILLISECONDS;
 
+    // 线程池的工作队列
     private BlockingQueue workQueue = new LinkedBlockingQueue(4096);
 
+    // 线程池的拒绝策略，抛出RejectedExecutionException异常
     private RejectedExecutionHandler rejectedExecutionHandler = new ThreadPoolExecutor.AbortPolicy();
 
+    // 线程是否为守护线程
     private boolean isDaemon = false;
 
+    // 线程名称的前缀
     private String threadNamePrefix;
 
+    // 线程工厂，用于创建线程
     private ThreadFactory threadFactory;
+
+    public static ThreadPoolBuilder builder() {
+        return new ThreadPoolBuilder();
+    }
 
     private Integer calculateCoreNum() {
         int cpuCoreNum = Runtime.getRuntime().availableProcessors();
@@ -77,10 +90,6 @@ public final class ThreadPoolBuilder implements Builder<ThreadPoolExecutor> {
     public ThreadPoolBuilder workQueue(BlockingQueue workQueue) {
         this.workQueue = workQueue;
         return this;
-    }
-
-    public static ThreadPoolBuilder builder() {
-        return new ThreadPoolBuilder();
     }
 
     @Override

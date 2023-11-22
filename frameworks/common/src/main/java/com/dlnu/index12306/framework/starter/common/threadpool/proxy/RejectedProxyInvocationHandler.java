@@ -16,12 +16,12 @@ import java.util.concurrent.atomic.AtomicLong;
 public class RejectedProxyInvocationHandler implements InvocationHandler {
 
     /**
-     * Target object
+     * 代理目标对象
      */
     private final Object target;
 
     /**
-     * Reject count
+     * 拒绝次数
      */
     private final AtomicLong rejectCount;
 

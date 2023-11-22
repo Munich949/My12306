@@ -15,55 +15,33 @@ public final class ThreadFactoryBuilder implements Builder<ThreadFactory> {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    // 用于创建线程的底层线程工厂
     private ThreadFactory backingThreadFactory;
 
+    // 线程名称的前缀
     private String namePrefix;
 
+    // 线程是否为守护线程
     private Boolean daemon;
 
+    // 线程的优先级
     private Integer priority;
 
+    // 线程未捕获异常的处理器
     private Thread.UncaughtExceptionHandler uncaughtExceptionHandler;
 
-    public ThreadFactoryBuilder threadFactory(ThreadFactory backingThreadFactory) {
-        this.backingThreadFactory = backingThreadFactory;
-        return this;
-    }
-
-    public ThreadFactoryBuilder prefix(String namePrefix) {
-        this.namePrefix = namePrefix;
-        return this;
-    }
-
-    public ThreadFactoryBuilder daemon(boolean daemon) {
-        this.daemon = daemon;
-        return this;
-    }
-
-    public ThreadFactoryBuilder priority(int priority) {
-        if (priority < Thread.MIN_PRIORITY) {
-            throw new IllegalArgumentException(String.format("Thread priority ({}) must be >= {}", priority, Thread.MIN_PRIORITY));
-        }
-        if (priority > Thread.MAX_PRIORITY) {
-            throw new IllegalArgumentException(String.format("Thread priority ({}) must be <= {}", priority, Thread.MAX_PRIORITY));
-        }
-        this.priority = priority;
-        return this;
-    }
-
-    public void uncaughtExceptionHandler(Thread.UncaughtExceptionHandler uncaughtExceptionHandler) {
-        this.uncaughtExceptionHandler = uncaughtExceptionHandler;
-    }
-
+    /**
+     * 创建一个ThreadFactoryBuilder对象的实例
+     */
     public static ThreadFactoryBuilder builder() {
         return new ThreadFactoryBuilder();
     }
 
-    @Override
-    public ThreadFactory build() {
-        return build(this);
-    }
-
+    /**
+     *
+     * @param builder
+     * @return
+     */
     private static ThreadFactory build(ThreadFactoryBuilder builder) {
         final ThreadFactory backingThreadFactory = (null != builder.backingThreadFactory)
                 ? builder.backingThreadFactory
@@ -89,5 +67,55 @@ public final class ThreadFactoryBuilder implements Builder<ThreadFactory> {
             }
             return thread;
         };
+    }
+
+    /**
+     * 设置底层线程工厂
+     */
+    public ThreadFactoryBuilder threadFactory(ThreadFactory backingThreadFactory) {
+        this.backingThreadFactory = backingThreadFactory;
+        return this;
+    }
+
+    /**
+     * 设置线程名称的前缀
+     */
+    public ThreadFactoryBuilder prefix(String namePrefix) {
+        this.namePrefix = namePrefix;
+        return this;
+    }
+
+    /**
+     * 设置线程是否为守护线程
+     */
+    public ThreadFactoryBuilder daemon(boolean daemon) {
+        this.daemon = daemon;
+        return this;
+    }
+
+    /**
+     * 设置线程的优先级
+     */
+    public ThreadFactoryBuilder priority(int priority) {
+        if (priority < Thread.MIN_PRIORITY) {
+            throw new IllegalArgumentException(String.format("Thread priority ({}) must be >= {}", priority, Thread.MIN_PRIORITY));
+        }
+        if (priority > Thread.MAX_PRIORITY) {
+            throw new IllegalArgumentException(String.format("Thread priority ({}) must be <= {}", priority, Thread.MAX_PRIORITY));
+        }
+        this.priority = priority;
+        return this;
+    }
+
+    /**
+     * 设置线程未捕获异常的处理器
+     */
+    public void uncaughtExceptionHandler(Thread.UncaughtExceptionHandler uncaughtExceptionHandler) {
+        this.uncaughtExceptionHandler = uncaughtExceptionHandler;
+    }
+
+    @Override
+    public ThreadFactory build() {
+        return build(this);
     }
 }

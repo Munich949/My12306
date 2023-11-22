@@ -17,8 +17,10 @@ import static com.github.dozermapper.core.loader.api.TypeMappingOptions.mapNull;
 @NoArgsConstructor(access = lombok.AccessLevel.PRIVATE)
 public class BeanUtil {
 
+    // 用于在对象之间进行数据映射
     protected static Mapper BEAN_MAPPER_BUILDER;
 
+    // 创建一个默认的 Mapper 实例
     static {
         BEAN_MAPPER_BUILDER = DozerBeanMapperBuilder.buildDefault();
     }
@@ -65,7 +67,7 @@ public class BeanUtil {
     public static <T, S> List<T> convert(List<S> sources, Class<T> clazz) {
         return Optional.ofNullable(sources)
                 .map(each -> {
-                    List<T> targetList = new ArrayList<T>(each.size());
+                    List<T> targetList = new ArrayList<>(each.size());
                     each.stream()
                             .forEach(item -> targetList.add(BEAN_MAPPER_BUILDER.map(item, clazz)));
                     return targetList;

@@ -13,8 +13,9 @@ public class Assert {
 
     /**
      * 判断表达式是否为真，如果不为真，则抛出 IllegalArgumentException 异常
+     *
      * @param expression 判断表达式
-     * @param message 异常信息
+     * @param message    异常信息
      */
     public static void isTrue(boolean expression, String message) {
         if (!expression) {
@@ -25,6 +26,7 @@ public class Assert {
     /**
      * 判断表达式是否为真，如果不为真，则抛出 IllegalArgumentException 异常
      * 默认异常信息为 "[Assertion failed] - this expression must be true"
+     *
      * @param expression 判断表达式
      */
     public static void isTrue(boolean expression) {
@@ -33,7 +35,8 @@ public class Assert {
 
     /**
      * 判断对象是否为 null，如果不为 null，则抛出 IllegalArgumentException 异常
-     * @param object 对象
+     *
+     * @param object  对象
      * @param message 异常信息
      */
     public static void isNull(Object object, String message) {
@@ -45,6 +48,7 @@ public class Assert {
     /**
      * 判断对象是否为 null，如果不为 null，则抛出 IllegalArgumentException 异常
      * 默认异常信息为 "[Assertion failed] - the object argument must be null"
+     *
      * @param object 对象
      */
     public static void isNull(Object object) {
@@ -53,7 +57,8 @@ public class Assert {
 
     /**
      * 判断对象是否不为 null，如果为 null，则抛出 IllegalArgumentException 异常
-     * @param object 对象
+     *
+     * @param object  对象
      * @param message 异常信息
      */
     public static void notNull(Object object, String message) {
@@ -65,6 +70,7 @@ public class Assert {
     /**
      * 判断对象是否不为 null，如果为 null，则抛出 IllegalArgumentException 异常
      * 默认异常信息为 "[Assertion failed] - this argument is required; it must not be null"
+     *
      * @param object 对象
      */
     public static void notNull(Object object) {
@@ -73,8 +79,9 @@ public class Assert {
 
     /**
      * 判断集合是否为空，如果为空，则抛出 IllegalArgumentException 异常
+     *
      * @param collection 集合
-     * @param message 异常信息
+     * @param message    异常信息
      */
     public static void notEmpty(Collection<?> collection, String message) {
         if (CollectionUtils.isEmpty(collection)) {
@@ -85,6 +92,7 @@ public class Assert {
     /**
      * 判断集合是否为空，如果为空，则抛出 IllegalArgumentException 异常
      * 默认异常信息为 "[Assertion failed] - this collection must not be empty: it must contain at least 1 element"
+     *
      * @param collection 集合
      */
     public static void notEmpty(Collection<?> collection) {
@@ -94,7 +102,8 @@ public class Assert {
 
     /**
      * 判断Map是否为空，如果为空，则抛出 IllegalArgumentException 异常
-     * @param map Map
+     *
+     * @param map     Map
      * @param message 异常信息
      */
     public static void notEmpty(Map<?, ?> map, String message) {
@@ -106,6 +115,7 @@ public class Assert {
     /**
      * 判断Map是否为空，如果为空，则抛出 IllegalArgumentException 异常
      * 默认异常信息为 "[Assertion failed] - this map must not be empty; it must contain at least one entry"
+     *
      * @param map Map
      */
     public static void notEmpty(Map<?, ?> map) {
@@ -114,7 +124,8 @@ public class Assert {
 
     /**
      * 判断字符串是否为空，如果为空，则抛出 IllegalArgumentException 异常
-     * @param str 字符串
+     *
+     * @param str     字符串
      * @param message 异常信息
      */
     public static void notEmpty(String str, String message) {
@@ -126,6 +137,7 @@ public class Assert {
     /**
      * 判断字符串是否为空，如果为空，则抛出 IllegalArgumentException 异常
      * 默认异常信息为 "[Assertion failed] - this string must not be empty"
+     *
      * @param str 字符串
      */
     public static void notEmpty(String str) {
@@ -136,7 +148,8 @@ public class Assert {
 
     /**
      * 判断字符串是否为空白，如果为空白，则抛出 IllegalArgumentException 异常
-     * @param str 字符串
+     *
+     * @param str     字符串
      * @param message 异常信息
      */
     public static void notBlank(String str, String message) {
@@ -148,6 +161,7 @@ public class Assert {
     /**
      * 判断字符串是否为空白，如果为空白，则抛出 IllegalArgumentException 异常
      * 默认异常信息为 "[Assertion failed] - this string must not be blank"
+     *
      * @param str 字符串
      */
     public static void notBlank(String str) {
@@ -156,7 +170,8 @@ public class Assert {
 
     /**
      * 判断字符串是否有文本内容，如果没有文本内容，则抛出 IllegalArgumentException 异常
-     * @param text 字符串
+     *
+     * @param text    字符串
      * @param message 异常信息
      */
     public static void hasText(String text, String message) {
@@ -168,6 +183,7 @@ public class Assert {
     /**
      * 判断字符串是否有文本内容，如果没有文本内容，则抛出 IllegalArgumentException 异常
      * 默认异常信息为 "[Assertion failed] - this String argument must have text; it must not be null, empty, or blank"
+     *
      * @param text 字符串
      */
     public static void hasText(String text) {
