@@ -6,7 +6,7 @@ import com.dlnu.index12306.framework.starter.distributedid.toolkit.SnowflakeIdUt
 /**
  * 自定义雪花算法生成器
  */
-public class CustomerIdGenerator implements IdentifierGenerator {
+public class CustomIdGenerator implements IdentifierGenerator {
 
     @Override
     public Number nextId(Object entity) {
