@@ -31,6 +31,12 @@
 
         <dependency>
             <groupId>com.dlnu.index12306</groupId>
+            <artifactId>index12306-user-spring-boot-starter</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.dlnu.index12306</groupId>
             <artifactId>index12306-web-spring-boot-starter</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -63,6 +69,7 @@
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
         </dependency>
+
     </dependencies>
 
 </project>
