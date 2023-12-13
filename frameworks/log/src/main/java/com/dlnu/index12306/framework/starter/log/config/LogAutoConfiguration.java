@@ -1,4 +1,4 @@
-package com.dlnu.index12306.framework.starter.log.confog;
+package com.dlnu.index12306.framework.starter.log.config;
 
 import com.dlnu.index12306.framework.starter.log.annotation.ILog;
 import com.dlnu.index12306.framework.starter.log.core.ILogPrintAspect;
