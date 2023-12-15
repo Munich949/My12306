@@ -12,15 +12,33 @@
     <artifactId>index12306-user-service</artifactId>
     <dependencies>
         <dependency>
-            <groupId>org.mybatis</groupId>
-            <artifactId>mybatis-spring</artifactId>
-            <version>3.0.2</version>
-        </dependency>
-        <dependency>
             <groupId>com.dlnu.index12306</groupId>
             <artifactId>index12306-database-spring-boot-starter</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.dlnu.index12306</groupId>
+            <artifactId>index12306-cache-spring-boot-starter</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis-spring</artifactId>
+            <version>3.0.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>3.21.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-redis</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>
