@@ -26,11 +26,6 @@ import org.springframework.beans.factory.InitializingBean;
 @Slf4j
 public class RandomWorkIdChoose extends AbstractWorkIdChooseTemplate implements InitializingBean {
 
-    private static long getRandom(int start, int end) {
-        long random = (long) (Math.random() * (end - start + 1) + start);
-        return random;
-    }
-
     @Override
     protected WorkIdWrapper chooseWorkId() {
         int start = 0, end = 31;
@@ -40,5 +35,10 @@ public class RandomWorkIdChoose extends AbstractWorkIdChooseTemplate implements 
     @Override
     public void afterPropertiesSet() throws Exception {
         chooseAndInit();
+    }
+
+    private static long getRandom(int start, int end) {
+        long random = (long) (Math.random() * (end - start + 1) + start);
+        return random;
     }
 }

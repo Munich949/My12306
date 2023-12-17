@@ -26,43 +26,8 @@ import com.dlnu.index12306.framework.starter.distributedid.toolkit.SnowflakeIdUt
  */
 public final class DefaultServiceIdGenerator implements ServiceIdGenerator {
 
-    /**
-     * 工作 ID 5 bit
-     */
-    private static final long WORKER_ID_BITS = 5L;
-    /**
-     * 数据中心 ID 5 bit
-     */
-    private static final long DATA_CENTER_ID_BITS = 5L;
-    /**
-     * 序列号 12 位，表示只允许 workerId 的范围为 0-4095
-     */
-    private static final long SEQUENCE_BITS = 12L;
-    /**
-     * 真实序列号 bit
-     */
-    private static final long SEQUENCE_ACTUAL_BITS = 8L;
-    /**
-     * 基因 bit
-     */
-    private static final long SEQUENCE_BIZ_BITS = 4L;
-    /**
-     * 机器节点左移12位
-     */
-    private static final long WORKER_ID_SHIFT = SEQUENCE_BITS;
-    /**
-     * 数据中心节点左移 17 位
-     */
-    private static final long DATA_CENTER_ID_SHIFT = SEQUENCE_BITS + WORKER_ID_BITS;
-    /**
-     * 时间毫秒数左移 22 位
-     */
-    private static final long TIMESTAMP_LEFT_SHIFT = SEQUENCE_BITS + WORKER_ID_BITS + DATA_CENTER_ID_BITS;
-    /**
-     * 默认开始时间
-     */
-    private static long DEFAULT_TWEPOCH = 1288834974657L;
     private final IdGenerator idGenerator;
+
     private long maxBizIdBitsLen;
 
     public DefaultServiceIdGenerator() {
@@ -97,4 +62,49 @@ public final class DefaultServiceIdGenerator implements ServiceIdGenerator {
                 .build();
         return snowflakeIdInfo;
     }
+
+    /**
+     * 工作 ID 5 bit
+     */
+    private static final long WORKER_ID_BITS = 5L;
+
+    /**
+     * 数据中心 ID 5 bit
+     */
+    private static final long DATA_CENTER_ID_BITS = 5L;
+
+    /**
+     * 序列号 12 位，表示只允许 workerId 的范围为 0-4095
+     */
+    private static final long SEQUENCE_BITS = 12L;
+
+    /**
+     * 真实序列号 bit
+     */
+    private static final long SEQUENCE_ACTUAL_BITS = 8L;
+
+    /**
+     * 基因 bit
+     */
+    private static final long SEQUENCE_BIZ_BITS = 4L;
+
+    /**
+     * 机器节点左移12位
+     */
+    private static final long WORKER_ID_SHIFT = SEQUENCE_BITS;
+
+    /**
+     * 默认开始时间
+     */
+    private static long DEFAULT_TWEPOCH = 1288834974657L;
+
+    /**
+     * 数据中心节点左移 17 位
+     */
+    private static final long DATA_CENTER_ID_SHIFT = SEQUENCE_BITS + WORKER_ID_BITS;
+
+    /**
+     * 时间毫秒数左移 22 位
+     */
+    private static final long TIMESTAMP_LEFT_SHIFT = SEQUENCE_BITS + WORKER_ID_BITS + DATA_CENTER_ID_BITS;
 }

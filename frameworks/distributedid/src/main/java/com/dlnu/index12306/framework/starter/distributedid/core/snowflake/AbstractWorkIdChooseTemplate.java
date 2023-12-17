@@ -18,8 +18,8 @@
 package com.dlnu.index12306.framework.starter.distributedid.core.snowflake;
 
 import cn.hutool.core.date.SystemClock;
-import com.dlnu.index12306.framework.starter.distributedid.toolkit.SnowflakeIdUtil;
 import lombok.extern.slf4j.Slf4j;
+import com.dlnu.index12306.framework.starter.distributedid.toolkit.SnowflakeIdUtil;
 import org.springframework.beans.factory.annotation.Value;
 
 /**

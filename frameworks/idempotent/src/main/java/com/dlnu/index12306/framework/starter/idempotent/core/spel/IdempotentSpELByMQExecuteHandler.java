@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.dlnu.index12306.framework.starter.idempotent.core.spel;
 
 import lombok.RequiredArgsConstructor;
@@ -21,10 +38,15 @@ import java.util.concurrent.TimeUnit;
 public final class IdempotentSpELByMQExecuteHandler extends AbstractIdempotentExecuteHandler implements IdempotentSpELService {
 
     private final DistributedCache distributedCache;
-
     private final static int TIMEOUT = 600;
     private final static String WRAPPER = "wrapper:spEL:MQ";
 
+    /**
+     * 构建幂等性参数包装类
+     *
+     * @param joinPoint AOP 方法处理
+     * @return
+     */
     @SneakyThrows
     @Override
     protected IdempotentParamWrapper buildWrapper(ProceedingJoinPoint joinPoint) {
@@ -33,14 +55,23 @@ public final class IdempotentSpELByMQExecuteHandler extends AbstractIdempotentEx
         return IdempotentParamWrapper.builder().lockKey(key).joinPoint(joinPoint).build();
     }
 
+    /**
+     * 幂等性处理逻辑
+     *
+     * @param wrapper 幂等参数包装器
+     */
     @Override
     public void handler(IdempotentParamWrapper wrapper) {
+        // 构造唯一键
         String uniqueKey = wrapper.getIdempotent().uniqueKeyPrefix() + wrapper.getLockKey();
         Boolean setIfAbsent = ((StringRedisTemplate) distributedCache.getInstance())
                 .opsForValue()
                 .setIfAbsent(uniqueKey, IdempotentMQConsumeStatusEnum.CONSUMING.getCode(), TIMEOUT, TimeUnit.SECONDS);
+        // 如果设置失败，则表示该请求已被处理过
         if (setIfAbsent != null && !setIfAbsent) {
+            // 获取处理状态
             String consumeStatus = distributedCache.get(uniqueKey, String.class);
+            // 判断是否为错误状态
             boolean error = IdempotentMQConsumeStatusEnum.isError(consumeStatus);
             LogUtil.getLog(wrapper.getJoinPoint()).warn("[{}] MQ repeated consumption, {}.", uniqueKey, error ? "Wait for the client to delay consumption" : "Status is completed");
             throw new RepeatConsumptionException(error);

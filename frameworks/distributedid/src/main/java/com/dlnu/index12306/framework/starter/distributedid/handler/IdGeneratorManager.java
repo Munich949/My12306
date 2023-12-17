@@ -17,10 +17,10 @@
 
 package com.dlnu.index12306.framework.starter.distributedid.handler;
 
+import lombok.NonNull;
 import com.dlnu.index12306.framework.starter.distributedid.core.IdGenerator;
 import com.dlnu.index12306.framework.starter.distributedid.core.serviceid.DefaultServiceIdGenerator;
 import com.dlnu.index12306.framework.starter.distributedid.core.serviceid.ServiceIdGenerator;
-import lombok.NonNull;
 
 import java.util.Map;
 import java.util.Optional;

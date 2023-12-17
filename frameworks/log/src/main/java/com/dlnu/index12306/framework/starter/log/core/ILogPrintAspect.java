@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.dlnu.index12306.framework.starter.log.core;
 
 import cn.hutool.core.date.DateUtil;
@@ -30,15 +47,23 @@ public class ILogPrintAspect {
      */
     @Around("@within(com.dlnu.index12306.framework.starter.log.annotation.ILog) || @annotation(com.dlnu.index12306.framework.starter.log.annotation.ILog)")
     public Object printMLog(ProceedingJoinPoint joinPoint) throws Throwable {
+
         long startTime = SystemClock.now();
+        // 获取方法签名
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+        // 获取日志记录器
         Logger log = LoggerFactory.getLogger(methodSignature.getDeclaringType());
         String beginTime = DateUtil.now();
         Object result = null;
+
         try {
+            // 执行相应方法
             result = joinPoint.proceed();
         } finally {
+            // 获取目标方法对象
             Method targetMethod = joinPoint.getTarget().getClass().getDeclaredMethod(methodSignature.getName(), methodSignature.getMethod().getParameterTypes());
+
+            // 获取目标方法上的 ILog 注解，如果不存在，则获取目标类上的 ILog 注解
             ILog logAnnotation = Optional.ofNullable(targetMethod.getAnnotation(ILog.class)).orElse(joinPoint.getTarget().getClass().getAnnotation(ILog.class));
             if (logAnnotation != null) {
                 ILogPrintDTO logPrint = new ILogPrintDTO();
@@ -49,6 +74,7 @@ public class ILogPrintAspect {
                 if (logAnnotation.output()) {
                     logPrint.setOutputParams(result);
                 }
+                // 获取请求的方法类型和请求URI
                 String methodType = "", requestURI = "";
                 try {
                     ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
@@ -57,27 +83,45 @@ public class ILogPrintAspect {
                     requestURI = servletRequestAttributes.getRequest().getRequestURI();
                 } catch (Exception ignored) {
                 }
+
+                // 打印日志信息
                 log.info("[{}] {}, executeTime: {}ms, info: {}", methodType, requestURI, SystemClock.now() - startTime, JSON.toJSONString(logPrint));
             }
         }
+
         return result;
     }
 
+
     private Object[] buildInput(ProceedingJoinPoint joinPoint) {
+        // 获取方法的输入参数数组
         Object[] args = joinPoint.getArgs();
+
+        // 创建一个与输入参数数组相同长度的新数组，用于存放处理后的参数
         Object[] printArgs = new Object[args.length];
+
         for (int i = 0; i < args.length; i++) {
+            // 判断当前参数是否为 HttpServletRequest 或 HttpServletResponse 类型，
+            // 如果是，则不做处理，直接跳过
             if ((args[i] instanceof HttpServletRequest) || args[i] instanceof HttpServletResponse) {
                 continue;
             }
+
+            // 如果当前参数是 byte[] 类型，则将其替换为字符串 "byte array"
             if (args[i] instanceof byte[]) {
                 printArgs[i] = "byte array";
-            } else if (args[i] instanceof MultipartFile) {
+            }
+            // 如果当前参数是 MultipartFile 类型，则将其替换为字符串 "file"
+            else if (args[i] instanceof MultipartFile) {
                 printArgs[i] = "file";
-            } else {
+            }
+            // 否则，保留原始参数值
+            else {
                 printArgs[i] = args[i];
             }
         }
+
         return printArgs;
     }
+
 }
