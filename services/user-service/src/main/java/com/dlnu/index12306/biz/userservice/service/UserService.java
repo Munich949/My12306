@@ -1,5 +1,7 @@
 package com.dlnu.index12306.biz.userservice.service;
 
+import com.dlnu.index12306.biz.userservice.dto.req.UserUpdateReqDTO;
+import com.dlnu.index12306.biz.userservice.dto.resp.UserQueryActualRespDTO;
 import com.dlnu.index12306.biz.userservice.dto.resp.UserQueryRespDTO;
 import jakarta.validation.constraints.NotEmpty;
 
@@ -33,4 +35,19 @@ public interface UserService {
      * @return 用户详细信息
      */
     UserQueryRespDTO queryUserByUsername(@NotEmpty String username);
+
+    /**
+     * 根据用户名查询用户无脱敏信息
+     *
+     * @param username 用户名
+     * @return 用户详细信息
+     */
+    UserQueryActualRespDTO queryActualUserByUsername(@NotEmpty String username);
+
+    /**
+     * 根据用户 ID 修改用户信息
+     *
+     * @param requestParam 用户信息入参
+     */
+    void update(UserUpdateReqDTO requestParam);
 }
