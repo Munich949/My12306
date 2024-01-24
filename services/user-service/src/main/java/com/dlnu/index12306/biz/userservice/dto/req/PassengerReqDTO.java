@@ -15,36 +15,20 @@
  * limitations under the License.
  */
 
-package com.dlnu.index12306.biz.userservice.dao.entity;
+package com.dlnu.index12306.biz.userservice.dto.req;
 
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.dlnu.index12306.framework.starter.database.base.BaseDO;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.util.Date;
 
 /**
- * 乘车人实体
+ * 乘车人添加&修改请求参数
  */
 @Data
-@TableName("t_passenger")
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class PassengerDO extends BaseDO {
+public class PassengerReqDTO {
 
     /**
-     * id
+     * 乘车人id
      */
-    private Long id;
-
-    /**
-     * 用户名
-     */
-    private String username;
+    private String id;
 
     /**
      * 真实姓名
@@ -70,14 +54,4 @@ public class PassengerDO extends BaseDO {
      * 手机号
      */
     private String phone;
-
-    /**
-     * 添加日期
-     */
-    private Date createDate;
-
-    /**
-     * 审核状态
-     */
-    private Integer verifyStatus;
 }

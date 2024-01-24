@@ -15,42 +15,27 @@
  * limitations under the License.
  */
 
-package com.dlnu.index12306.biz.userservice.dao.entity;
+package com.dlnu.index12306.biz.userservice.common.enums;
 
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.dlnu.index12306.framework.starter.database.base.BaseDO;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
 /**
- * 用户手机号实体对象
+ * 用户注册错误码枚举
  */
-@Data
-@NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@TableName("t_user_phone")
-public class UserPhoneDO extends BaseDO {
+public enum VerifyStatusEnum {
 
     /**
-     * id
+     * 未审核
      */
-    private Long id;
+    UNREVIEWED(0),
 
     /**
-     * 用户名
+     * 已审核
      */
-    private String username;
+    REVIEWED(1);
 
-    /**
-     * 手机号
-     */
-    private String phone;
-
-    /**
-     * 注销时间戳
-     */
-    private Long deletionTime;
+    @Getter
+    private final int code;
 }

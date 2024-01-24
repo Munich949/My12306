@@ -18,8 +18,8 @@
 package com.dlnu.index12306.biz.userservice.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
 import com.dlnu.index12306.framework.starter.database.base.BaseDO;
+import lombok.Data;
 
 /**
  * 用户信息实体

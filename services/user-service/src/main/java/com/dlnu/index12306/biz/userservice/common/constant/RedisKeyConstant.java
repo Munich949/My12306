@@ -36,4 +36,9 @@ public final class RedisKeyConstant {
      * 用户注销锁，Key Prefix + 用户名
      */
     public static final String LOCK_USER_DELETION = "index12306-user-service:lock:user-deletion";
+
+    /**
+     * 用户乘车人列表，Key Prefix + 用户名
+     */
+    public static final String USER_PASSENGER_LIST = "index12306-user-service:user-passenger-list:";
 }

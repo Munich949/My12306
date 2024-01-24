@@ -17,10 +17,10 @@
 
 package com.dlnu.index12306.biz.userservice.service.handler.filter.user;
 
-import lombok.RequiredArgsConstructor;
 import com.dlnu.index12306.biz.userservice.dto.req.UserRegisterReqDTO;
 import com.dlnu.index12306.biz.userservice.service.UserService;
 import com.dlnu.index12306.framework.starter.convention.exception.ClientException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**

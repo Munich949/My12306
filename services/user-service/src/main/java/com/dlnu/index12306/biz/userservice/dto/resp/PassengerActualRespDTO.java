@@ -15,31 +15,25 @@
  * limitations under the License.
  */
 
-package com.dlnu.index12306.biz.userservice.dao.entity;
+package com.dlnu.index12306.biz.userservice.dto.resp;
 
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.dlnu.index12306.framework.starter.database.base.BaseDO;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
 
 import java.util.Date;
 
 /**
- * 乘车人实体
+ * 乘车人真实返回参数，不包含脱敏信息
  */
 @Data
-@TableName("t_passenger")
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class PassengerDO extends BaseDO {
+@Accessors(chain = true)
+public class PassengerActualRespDTO {
 
     /**
-     * id
+     * 乘车人id
      */
-    private Long id;
+    private String id;
 
     /**
      * 用户名
@@ -74,6 +68,7 @@ public class PassengerDO extends BaseDO {
     /**
      * 添加日期
      */
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date createDate;
 
     /**
