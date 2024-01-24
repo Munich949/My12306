@@ -18,17 +18,17 @@
 package com.dlnu.index12306.framework.starter.cache;
 
 import com.alibaba.fastjson2.JSON;
-import com.dlnu.index12306.framework.starter.cache.config.RedisDistributedProperties;
-import com.google.common.collect.Lists;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.RequiredArgsConstructor;
 import com.dlnu.index12306.framework.starter.bases.Singleton;
+import com.dlnu.index12306.framework.starter.cache.config.RedisDistributedProperties;
 import com.dlnu.index12306.framework.starter.cache.core.CacheGetFilter;
 import com.dlnu.index12306.framework.starter.cache.core.CacheGetIfAbsent;
 import com.dlnu.index12306.framework.starter.cache.core.CacheLoader;
 import com.dlnu.index12306.framework.starter.cache.toolkit.CacheUtil;
 import com.dlnu.index12306.framework.starter.cache.toolkit.FastJson2Util;
+import com.google.common.collect.Lists;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.RequiredArgsConstructor;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -48,12 +48,11 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class StringRedisTemplateProxy implements DistributedCache {
 
+    private static final String LUA_PUT_IF_ALL_ABSENT_SCRIPT_PATH = "lua/putIfAllAbsent.lua";
+    private static final String SAFE_GET_DISTRIBUTED_LOCK_KEY_PREFIX = "safe_get_distributed_lock_get:";
     private final StringRedisTemplate stringRedisTemplate;
     private final RedisDistributedProperties redisProperties;
     private final RedissonClient redissonClient;
-
-    private static final String LUA_PUT_IF_ALL_ABSENT_SCRIPT_PATH = "lua/putIfAllAbsent.lua";
-    private static final String SAFE_GET_DISTRIBUTED_LOCK_KEY_PREFIX = "safe_get_distributed_lock_get:";
 
     @Override
     public <T> T get(String key, Class<T> clazz) {
@@ -78,7 +77,7 @@ public class StringRedisTemplateProxy implements DistributedCache {
             return redisScript;
         });
         Boolean result = stringRedisTemplate.execute(actual, Lists.newArrayList(keys), redisProperties.getValueTimeout().toString());
-        return result == null ? false : result;
+        return result != null && result;
     }
 
     @Override

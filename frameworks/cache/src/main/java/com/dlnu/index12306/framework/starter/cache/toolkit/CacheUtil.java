@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 /**
  * 缓存工具类
  */
-public class CacheUtil {
+public final class CacheUtil {
 
     private static final String SPLICING_OPERATOR = "_";
 
@@ -48,7 +48,6 @@ public class CacheUtil {
      * @return
      */
     public static boolean isNullOrBlank(Object cacheVal) {
-        boolean result = cacheVal == null || (cacheVal instanceof String && Strings.isNullOrEmpty((String) cacheVal));
-        return result;
+        return cacheVal == null || (cacheVal instanceof String && Strings.isNullOrEmpty((String) cacheVal));
     }
 }
