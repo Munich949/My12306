@@ -14,14 +14,18 @@ import com.dlnu.index12306.biz.userservice.dto.req.UserUpdateReqDTO;
 import com.dlnu.index12306.biz.userservice.dto.resp.UserQueryActualRespDTO;
 import com.dlnu.index12306.biz.userservice.dto.resp.UserQueryRespDTO;
 import com.dlnu.index12306.biz.userservice.service.UserService;
+import com.dlnu.index12306.framework.starter.cache.DistributedCache;
 import com.dlnu.index12306.framework.starter.common.toolkit.BeanUtil;
 import com.dlnu.index12306.framework.starter.convention.exception.ClientException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
 import java.util.Optional;
+
+import static com.dlnu.index12306.biz.userservice.common.constant.RedisKeyConstant.USER_DELETION_LIST;
 
 @Service
 @Slf4j
@@ -31,14 +35,18 @@ public class UserServiceImpl implements UserService {
     private final UserDeletionMapper userDeletionMapper;
     private final UserMapper userMapper;
     private final UserMailMapper userMailMapper;
+    private final DistributedCache distributedCache;
 
     @Override
     public Integer queryUserDeletionNum(Integer idType, String idCard) {
+        StringRedisTemplate instance = (StringRedisTemplate) distributedCache.getInstance();
+        Long deletionCount = instance.opsForList()
+                .size(String.format(USER_DELETION_LIST, idType, idCard));
         LambdaQueryWrapper<UserDeletionDO> queryWrapper = Wrappers.lambdaQuery(UserDeletionDO.class)
                 .eq(UserDeletionDO::getIdType, idType)
                 .eq(UserDeletionDO::getIdCard, idCard);
-        // TODO 此处应该先查缓存
-        Long deletionCount = userDeletionMapper.selectCount(queryWrapper);
+        deletionCount = Optional.ofNullable(deletionCount)
+                .orElse(userDeletionMapper.selectCount(queryWrapper));
         return Optional.ofNullable(deletionCount).map(Long::intValue).orElse(0);
     }
 

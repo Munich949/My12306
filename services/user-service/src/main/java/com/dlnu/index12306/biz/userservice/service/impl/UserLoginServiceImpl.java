@@ -1,6 +1,7 @@
 package com.dlnu.index12306.biz.userservice.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -194,6 +195,10 @@ public class UserLoginServiceImpl implements UserLoginService {
                     .idCard(userQueryRespDTO.getIdCard())
                     .build();
             userDeletionMapper.insert(userDeletionDO);
+            StringRedisTemplate instance = (StringRedisTemplate) distributedCache.getInstance();
+            instance.opsForList()
+                    .rightPush(String.format(USER_DELETION_LIST, userQueryRespDTO.getIdType(), userQueryRespDTO.getIdCard()),
+                            JSONUtil.toJsonStr(userDeletionDO));
             UserDO userDO = new UserDO();
             userDO.setDeletionTime(System.currentTimeMillis());
             userDO.setUsername(username);
@@ -213,7 +218,6 @@ public class UserLoginServiceImpl implements UserLoginService {
             }
             distributedCache.delete(UserContext.getToken());
             userReuseMapper.insert(new UserReuseDO(username));
-            StringRedisTemplate instance = (StringRedisTemplate) distributedCache.getInstance();
             instance.opsForSet().add(USER_REGISTER_REUSE_SHARDING + hashShardingIdx(username), username);
         } finally {
             lock.unlock();
