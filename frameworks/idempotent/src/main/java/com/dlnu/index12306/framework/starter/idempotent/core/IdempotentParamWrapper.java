@@ -17,14 +17,14 @@
 
 package com.dlnu.index12306.framework.starter.idempotent.core;
 
+import com.dlnu.index12306.framework.starter.idempotent.annotation.Idempotent;
+import com.dlnu.index12306.framework.starter.idempotent.enums.IdempotentTypeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.aspectj.lang.ProceedingJoinPoint;
-import com.dlnu.index12306.framework.starter.idempotent.annotation.Idempotent;
-import com.dlnu.index12306.framework.starter.idempotent.enums.IdempotentTypeEnum;
 
 /**
  * 幂等参数包装

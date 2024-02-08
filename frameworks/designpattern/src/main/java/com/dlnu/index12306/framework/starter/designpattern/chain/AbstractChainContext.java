@@ -50,6 +50,7 @@ public final class AbstractChainContext<T> implements CommandLineRunner {
 
     /**
      * 收集 ApplicationContextHolder 中所有责任链组件 Bean 并封装到容器中
+     *
      * @param args
      * @throws Exception
      */

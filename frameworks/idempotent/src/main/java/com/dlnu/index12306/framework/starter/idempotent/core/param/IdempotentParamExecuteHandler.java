@@ -20,13 +20,13 @@ package com.dlnu.index12306.framework.starter.idempotent.core.param;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.alibaba.fastjson2.JSON;
-import com.dlnu.index12306.framework.starter.user.core.UserContext;
-import lombok.RequiredArgsConstructor;
-import org.aspectj.lang.ProceedingJoinPoint;
 import com.dlnu.index12306.framework.starter.convention.exception.ClientException;
 import com.dlnu.index12306.framework.starter.idempotent.core.AbstractIdempotentExecuteHandler;
 import com.dlnu.index12306.framework.starter.idempotent.core.IdempotentContext;
 import com.dlnu.index12306.framework.starter.idempotent.core.IdempotentParamWrapper;
+import com.dlnu.index12306.framework.starter.user.core.UserContext;
+import lombok.RequiredArgsConstructor;
+import org.aspectj.lang.ProceedingJoinPoint;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -38,9 +38,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @RequiredArgsConstructor
 public final class IdempotentParamExecuteHandler extends AbstractIdempotentExecuteHandler implements IdempotentParamService {
 
-    private final RedissonClient redissonClient;
-
     private final static String LOCK = "lock:param:restAPI";
+    private final RedissonClient redissonClient;
 
     /**
      * 构建幂等性参数包装类

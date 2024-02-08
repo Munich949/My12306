@@ -17,16 +17,16 @@
 
 package com.dlnu.index12306.framework.starter.idempotent.core.spel;
 
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.reflect.MethodSignature;
 import com.dlnu.index12306.framework.starter.cache.DistributedCache;
 import com.dlnu.index12306.framework.starter.idempotent.annotation.Idempotent;
 import com.dlnu.index12306.framework.starter.idempotent.core.*;
 import com.dlnu.index12306.framework.starter.idempotent.enums.IdempotentMQConsumeStatusEnum;
 import com.dlnu.index12306.framework.starter.idempotent.toolkit.LogUtil;
 import com.dlnu.index12306.framework.starter.idempotent.toolkit.SpELUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.util.concurrent.TimeUnit;
@@ -37,9 +37,9 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public final class IdempotentSpELByMQExecuteHandler extends AbstractIdempotentExecuteHandler implements IdempotentSpELService {
 
-    private final DistributedCache distributedCache;
     private final static int TIMEOUT = 600;
     private final static String WRAPPER = "wrapper:spEL:MQ";
+    private final DistributedCache distributedCache;
 
     /**
      * 构建幂等性参数包装类

@@ -45,9 +45,10 @@ public class EagerThreadPoolExecutor extends ThreadPoolExecutor {
     /**
      * 在执行任务后调用的方法
      * <p>通过submittedTaskCount的decrementAndGet方法减少已提交的任务数量<p/>
+     *
      * @param r the runnable that has completed
      * @param t the exception that caused termination, or null if
-     * execution completed normally
+     *          execution completed normally
      */
     @Override
     protected void afterExecute(Runnable r, Throwable t) {
@@ -60,6 +61,7 @@ public class EagerThreadPoolExecutor extends ThreadPoolExecutor {
      * 然后，尝试使用父类的execute方法执行任务，
      * 如果抛出RejectedExecutionException异常，则将任务添加到任务队列中。
      * 如果任务队列已满，则抛出RejectedExecutionException异常。</p>
+     *
      * @param command the task to execute
      */
     @Override

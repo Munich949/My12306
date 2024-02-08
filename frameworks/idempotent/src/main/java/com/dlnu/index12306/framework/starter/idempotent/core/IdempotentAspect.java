@@ -17,11 +17,11 @@
 
 package com.dlnu.index12306.framework.starter.idempotent.core;
 
+import com.dlnu.index12306.framework.starter.idempotent.annotation.Idempotent;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
-import com.dlnu.index12306.framework.starter.idempotent.annotation.Idempotent;
 
 import java.lang.reflect.Method;
 
@@ -30,6 +30,13 @@ import java.lang.reflect.Method;
  */
 @Aspect
 public final class IdempotentAspect {
+
+    // 获取目标方法上的 @Idempotent 注解
+    public static Idempotent getIdempotent(ProceedingJoinPoint joinPoint) throws NoSuchMethodException {
+        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+        Method targetMethod = joinPoint.getTarget().getClass().getDeclaredMethod(methodSignature.getName(), methodSignature.getMethod().getParameterTypes());
+        return targetMethod.getAnnotation(Idempotent.class);  // 返回 @Idempotent 注解
+    }
 
     /**
      * 增强方法标记 {@link Idempotent} 注解逻辑
@@ -66,12 +73,5 @@ public final class IdempotentAspect {
             IdempotentContext.clean();  // 清理幂等上下文
         }
         return resultObj;  // 返回方法执行结果
-    }
-
-    // 获取目标方法上的 @Idempotent 注解
-    public static Idempotent getIdempotent(ProceedingJoinPoint joinPoint) throws NoSuchMethodException {
-        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-        Method targetMethod = joinPoint.getTarget().getClass().getDeclaredMethod(methodSignature.getName(), methodSignature.getMethod().getParameterTypes());
-        return targetMethod.getAnnotation(Idempotent.class);  // 返回 @Idempotent 注解
     }
 }

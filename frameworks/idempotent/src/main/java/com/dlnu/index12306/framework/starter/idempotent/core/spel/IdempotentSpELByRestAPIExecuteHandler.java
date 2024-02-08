@@ -17,10 +17,6 @@
 
 package com.dlnu.index12306.framework.starter.idempotent.core.spel;
 
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.reflect.MethodSignature;
 import com.dlnu.index12306.framework.starter.convention.exception.ClientException;
 import com.dlnu.index12306.framework.starter.idempotent.annotation.Idempotent;
 import com.dlnu.index12306.framework.starter.idempotent.core.AbstractIdempotentExecuteHandler;
@@ -28,6 +24,10 @@ import com.dlnu.index12306.framework.starter.idempotent.core.IdempotentAspect;
 import com.dlnu.index12306.framework.starter.idempotent.core.IdempotentContext;
 import com.dlnu.index12306.framework.starter.idempotent.core.IdempotentParamWrapper;
 import com.dlnu.index12306.framework.starter.idempotent.toolkit.SpELUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 
@@ -37,9 +37,8 @@ import org.redisson.api.RedissonClient;
 @RequiredArgsConstructor
 public final class IdempotentSpELByRestAPIExecuteHandler extends AbstractIdempotentExecuteHandler implements IdempotentSpELService {
 
-    private final RedissonClient redissonClient;
-
     private final static String LOCK = "lock:spEL:restAPI";
+    private final RedissonClient redissonClient;
 
     @SneakyThrows
     @Override

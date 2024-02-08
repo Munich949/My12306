@@ -55,7 +55,6 @@ public final class ThreadFactoryBuilder implements Builder<ThreadFactory> {
     }
 
     /**
-     *
      * @param builder
      * @return
      */

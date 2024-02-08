@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 public class RepeatConsumptionException extends RuntimeException {
-    
+
     /**
      * 错误标识
      * <p>

@@ -17,8 +17,8 @@
 
 package com.dlnu.index12306.framework.starter.idempotent.config;
 
-import lombok.Data;
 import com.dlnu.index12306.framework.starter.cache.config.RedisDistributedProperties;
+import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.concurrent.TimeUnit;

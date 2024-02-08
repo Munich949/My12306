@@ -18,16 +18,16 @@
 package com.dlnu.index12306.framework.starter.idempotent.core.token;
 
 import cn.hutool.core.util.StrUtil;
-import com.google.common.base.Strings;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import org.aspectj.lang.ProceedingJoinPoint;
 import com.dlnu.index12306.framework.starter.cache.DistributedCache;
 import com.dlnu.index12306.framework.starter.convention.errorcode.BaseErrorCode;
 import com.dlnu.index12306.framework.starter.convention.exception.ClientException;
 import com.dlnu.index12306.framework.starter.idempotent.config.IdempotentProperties;
 import com.dlnu.index12306.framework.starter.idempotent.core.AbstractIdempotentExecuteHandler;
 import com.dlnu.index12306.framework.starter.idempotent.core.IdempotentParamWrapper;
+import com.google.common.base.Strings;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import org.aspectj.lang.ProceedingJoinPoint;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -40,12 +40,11 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public final class IdempotentTokenExecuteHandler extends AbstractIdempotentExecuteHandler implements IdempotentTokenService {
 
-    private final DistributedCache distributedCache;
-    private final IdempotentProperties idempotentProperties;
-
     private static final String TOKEN_KEY = "token";
     private static final String TOKEN_PREFIX_KEY = "idempotent:token:";
     private static final long TOKEN_EXPIRED_TIME = 6000;
+    private final DistributedCache distributedCache;
+    private final IdempotentProperties idempotentProperties;
 
     @Override
     protected IdempotentParamWrapper buildWrapper(ProceedingJoinPoint joinPoint) {
