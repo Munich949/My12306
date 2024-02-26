@@ -57,16 +57,20 @@ public class SpELUtil {
      * @return 解析的字符串值
      */
     public static Object parse(String spEl, Method method, Object[] contextObj) {
+        // 获取方法的参数名
         DefaultParameterNameDiscoverer discoverer = new DefaultParameterNameDiscoverer();
+        // 将字符串形式的SpEL表达式转换为Expression对象
         ExpressionParser parser = new SpelExpressionParser();
         Expression exp = parser.parseExpression(spEl);
         String[] params = discoverer.getParameterNames(method);
+        // SpEL 表达式求值的上下文。在这个上下文中，变量可以被定义，并且后续可以被SpEL表达式引用
         StandardEvaluationContext context = new StandardEvaluationContext();
         if (ArrayUtil.isNotEmpty(params)) {
             for (int len = 0; len < params.length; len++) {
                 context.setVariable(params[len], contextObj[len]);
             }
         }
+        // 在给定的上下文中求解表达式
         return exp.getValue(context);
     }
 }
