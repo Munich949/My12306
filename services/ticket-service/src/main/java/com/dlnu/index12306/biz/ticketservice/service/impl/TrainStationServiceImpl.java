@@ -15,6 +15,9 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 列车站点接口实现层
+ */
 @Service
 @RequiredArgsConstructor
 public class TrainStationServiceImpl implements TrainStationService {
