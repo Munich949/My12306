@@ -1,4 +1,4 @@
-﻿package com.dlnu.index12306.biz.ticketservice.service.impl;
+package com.dlnu.index12306.biz.ticketservice.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
