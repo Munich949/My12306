@@ -26,7 +26,7 @@
         WHERE train_id = #{seatDO.trainId}
         AND start_station = #{seatDO.startStation}
         AND end_station = #{seatDO.endStation}
-        AND seat_status = '0',
+        AND seat_status = '0'
         AND carriage_number IN
         <foreach collection="trainCarriageList" item="carriage" open="(" separator="," close=")">
             #{carriage}
