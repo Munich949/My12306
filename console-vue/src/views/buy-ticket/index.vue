@@ -247,7 +247,7 @@
             </span>
           </template>
           <template #discountType="{ text }">
-            {{ TICKET_TYPE_LIST.find((item) => item.value === text)?.label }}
+            {{ TICKET_TYPE_LIST.find((item) => item.value === Number(text))?.label }}
           </template>
           <template #idType="{ text }">
             {{ ID_CARD_TYPE.find((item) => item.value === text)?.label }}
@@ -580,7 +580,9 @@ const handleChooseTicketType = (id, value) => {
       return true
     }
   })
-  state.dataSource[cIndex]['idType'] = value
+  if(cIndex !== undefined) {
+    state.dataSource[cIndex]['discountType'] = value
+  }
 }
 
 const handleSubmit = () => {

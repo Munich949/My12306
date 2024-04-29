@@ -15,11 +15,11 @@ const DISCOUNTS_TYPE = [
     value: 0
   },
   {
-    label: '儿童',
+    label: '学生',
     value: 1
   },
   {
-    label: '学生',
+    label: '儿童',
     value: 2
   },
   {
