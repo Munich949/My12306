@@ -17,8 +17,8 @@ import Cookies from 'js-cookie'
 const useForm = Form.useForm
 
 const formState = reactive({
-  usernameOrMailOrPhone: 'admin',
-  password: 'admin123456',
+  usernameOrMailOrPhone: '',
+  password: '',
   code: ''
 })
 
@@ -44,8 +44,8 @@ const rulesRef = reactive({
 const { validate, validateInfos } = useForm(formState, rulesRef)
 
 const registerForm = reactive({
-  username: 'admin',
-  password: 'admin123456',
+  username: '',
+  password: '',
   realName: '',
   idType: 0,
   idCard: '',

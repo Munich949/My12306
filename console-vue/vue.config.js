@@ -6,7 +6,10 @@ module.exports = {
         changeOrigin: true,
         ws: true
       }
-    }
+    },
+    client: {
+      overlay: false,
+    },
   },
   css: {
     loaderOptions: {
