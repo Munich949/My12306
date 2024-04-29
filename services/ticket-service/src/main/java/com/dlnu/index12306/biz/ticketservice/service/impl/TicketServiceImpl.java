@@ -14,7 +14,9 @@ import com.dlnu.index12306.biz.ticketservice.common.enums.TicketStatusEnum;
 import com.dlnu.index12306.biz.ticketservice.common.enums.VehicleTypeEnum;
 import com.dlnu.index12306.biz.ticketservice.dao.entity.*;
 import com.dlnu.index12306.biz.ticketservice.dao.mapper.*;
+import com.dlnu.index12306.biz.ticketservice.dto.domain.PurchaseTicketPassengerDetailDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.domain.SeatClassDTO;
+import com.dlnu.index12306.biz.ticketservice.dto.domain.SeatTypeCountDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.domain.TicketListDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.req.PurchaseTicketReqDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.req.TicketPageQueryReqDTO;
@@ -24,10 +26,13 @@ import com.dlnu.index12306.biz.ticketservice.dto.resp.TicketPurchaseRespDTO;
 import com.dlnu.index12306.biz.ticketservice.remote.TicketOrderRemoteService;
 import com.dlnu.index12306.biz.ticketservice.remote.dto.TicketOrderCreateRemoteReqDTO;
 import com.dlnu.index12306.biz.ticketservice.remote.dto.TicketOrderItemCreateRemoteReqDTO;
+import com.dlnu.index12306.biz.ticketservice.service.SeatService;
 import com.dlnu.index12306.biz.ticketservice.service.TicketService;
 import com.dlnu.index12306.biz.ticketservice.service.cache.SeatMarginCacheLoader;
+import com.dlnu.index12306.biz.ticketservice.service.handler.ticket.dto.TokenResultDTO;
 import com.dlnu.index12306.biz.ticketservice.service.handler.ticket.dto.TrainPurchaseTicketRespDTO;
 import com.dlnu.index12306.biz.ticketservice.service.handler.ticket.select.TrainSeatTypeSelector;
+import com.dlnu.index12306.biz.ticketservice.service.handler.ticket.tokenbucket.TicketAvailabilityTokenBucket;
 import com.dlnu.index12306.biz.ticketservice.toolkit.DateUtil;
 import com.dlnu.index12306.biz.ticketservice.toolkit.TimeStringComparator;
 import com.dlnu.index12306.framework.starter.bases.ApplicationContextHolder;
@@ -37,6 +42,8 @@ import com.dlnu.index12306.framework.starter.convention.exception.ServiceExcepti
 import com.dlnu.index12306.framework.starter.convention.result.Result;
 import com.dlnu.index12306.framework.starter.designpattern.chain.AbstractChainContext;
 import com.dlnu.index12306.framework.starter.user.core.UserContext;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +59,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import static com.dlnu.index12306.biz.ticketservice.common.constant.Index12306Constant.ADVANCE_TICKET_DAY;
@@ -74,8 +84,24 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketDO> imple
     private final AbstractChainContext<TicketPageQueryReqDTO> ticketPageQueryAbstractChainContext;
     private final AbstractChainContext<PurchaseTicketReqDTO> purchaseTicketAbstractChainContext;
     private final RedissonClient redissonClient;
+    private final TicketAvailabilityTokenBucket ticketAvailabilityTokenBucket;
+    private final SeatService seatService;
 
     private TicketService ticketService;
+
+    private final ScheduledExecutorService tokenIsNullRefreshExecutor = Executors.newScheduledThreadPool(1);
+    /**
+     * 本地安全锁容器 每躺列车的安全锁容器一天过期
+     */
+    private final Cache<String, ReentrantLock> localLockMap = Caffeine.newBuilder()
+            .expireAfterWrite(1, TimeUnit.DAYS)
+            .build();
+    /**
+     * 避免大量的用户同一时间访问刷新 Token 的容器 每10分钟刷新
+     */
+    private final Cache<String, Object> tokenTicketsRefreshMap = Caffeine.newBuilder()
+            .expireAfterWrite(10, TimeUnit.MINUTES)
+            .build();
 
     @Value("${ticket.availability.cache-update.type:}")
     private String ticketAvailabilityCacheUpdateType;
@@ -312,7 +338,72 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketDO> imple
 
     @Override
     public TicketPurchaseRespDTO purchaseTicketsV2(PurchaseTicketReqDTO requestParam) {
-        return null;
+        // 责任链模式，验证 1：参数必填 2：参数正确性 3：乘客是否已买当前车次等...
+        purchaseTicketAbstractChainContext.handler(TicketChainMarkEnum.TRAIN_PURCHASE_TICKET_FILTER.name(), requestParam);
+        // 获取令牌 获取不到令牌的线程无法继续访问数据库扣减余票 使用 Redis 过滤大部分无效的流量
+        TokenResultDTO tokenResult = ticketAvailabilityTokenBucket.takeTokenFromBucket(requestParam);
+        // 如果获取令牌产生错误
+        if (tokenResult.getTokenIsNull()) {
+            Object ifPresentObj = tokenTicketsRefreshMap.getIfPresent(requestParam.getTrainId());
+            if (ifPresentObj == null) {
+                synchronized (TicketServiceImpl.class) {
+                    if (tokenTicketsRefreshMap.getIfPresent(requestParam.getTrainId()) == null) {
+                        ifPresentObj = new Object();
+                        tokenTicketsRefreshMap.put(requestParam.getTrainId(), ifPresentObj);
+                        // 二次检查车票是否正常，如果不正常，则刷新令牌容器
+                        tokenIsNullRefreshToken(requestParam, tokenResult);
+                    }
+                }
+            }
+            throw new ServiceException("列车站点已无余票");
+        }
+        List<ReentrantLock> localLockList = new ArrayList<>();
+        List<RLock> distributedLockList = new ArrayList<>();
+        // 按照购票的座位类型进行分组
+        Map<Integer, List<PurchaseTicketPassengerDetailDTO>> seatTypeMap = requestParam.getPassengers().stream()
+                .collect(Collectors.groupingBy(PurchaseTicketPassengerDetailDTO::getSeatType));
+        // 以座位类型的粒度进行加锁
+        seatTypeMap.forEach((searType, count) -> {
+            String lockKey = String.format(LOCK_PURCHASE_TICKETS_V2, requestParam.getTrainId(), searType);
+            // 先获取本地锁 再获取分布式锁 通过 Caffeine 创建本地安全锁容器
+            // 注意：如果使用 ConcurrentHashMap 会导致容器中被无限存放 Key 导致内存溢出
+            ReentrantLock localLock = localLockMap.getIfPresent(lockKey);
+            if (localLock == null) {
+                // Caffeine 没有并发读写安全控制 这里需要手动控制 采用双检加锁的方式
+                synchronized (TicketService.class) {
+                    if ((localLock = localLockMap.getIfPresent(lockKey)) == null) {
+                        // 创建本地安全锁 放入本地安全锁容器中
+                        localLock = new ReentrantLock(true);
+                        localLockMap.put(lockKey, localLock);
+                    }
+                }
+            }
+            // 因为是按照座位类型粒度加的锁 所以需要将本地安全锁和分布式锁都加入到对应的 List
+            localLockList.add(localLock);
+            // 这里改进使用公平锁
+            RLock distributedLock = redissonClient.getFairLock(lockKey);
+            distributedLockList.add(distributedLock);
+        });
+        try {
+            // 遍历各座位类型的锁 加锁 执行购票逻辑
+            localLockList.forEach(ReentrantLock::lock);
+            distributedLockList.forEach(RLock::lock);
+            return ticketService.executePurchaseTickets(requestParam);
+        } finally {
+            // 解锁
+            localLockList.forEach(localLock -> {
+                try {
+                    localLock.unlock();
+                } catch (Throwable ignored) {
+                }
+            });
+            distributedLockList.forEach(distributedLock -> {
+                try {
+                    distributedLock.unlock();
+                } catch (Throwable ignored) {
+                }
+            });
+        }
     }
 
     @Override
@@ -395,6 +486,44 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketDO> imple
             throw ex;
         }
         return new TicketPurchaseRespDTO(ticketOrderResult.getData(), ticketOrderDetailResults);
+    }
+
+    private void tokenIsNullRefreshToken(PurchaseTicketReqDTO requestParam, TokenResultDTO tokenResult) {
+        RLock lock = redissonClient.getLock(String.format(LOCK_TOKEN_BUCKET_ISNULL, requestParam.getTrainId()));
+        // 尝试获取分布式锁，如果不成功则直接返回即可
+        if (!lock.tryLock()) {
+            return;
+        }
+        // 延迟更新的原因：一辆列车突发将列车票售空，可能数据库还没有扣减完，所以有个 10 秒缓冲时间
+        tokenIsNullRefreshExecutor.schedule(() -> {
+            try {
+                // 组装出座位类型以及每个座位类型下的购票人数
+                List<Integer> seatTypes = new ArrayList<>();
+                Map<Integer, Integer> tokenCountMap = new HashMap<>();
+                tokenResult.getTokenIsNullSeatTypeCounts().stream()
+                        .map(each -> each.split(StrUtil.UNDERLINE))
+                        .forEach(split -> {
+                            int seatType = Integer.parseInt(split[0]);
+                            seatTypes.add(seatType);
+                            tokenCountMap.put(seatType, Integer.parseInt(split[1]));
+                        });
+                // 获取数据库中座位类型对应的余票数量
+                List<SeatTypeCountDTO> seatTypeCountDTOList = seatService.listSeatTypeCount(Long.parseLong(requestParam.getTrainId()),
+                        requestParam.getDeparture(),
+                        requestParam.getArrival(),
+                        seatTypes);
+                for (SeatTypeCountDTO each : seatTypeCountDTOList) {
+                    Integer tokenCount = tokenCountMap.get(each.getSeatType());
+                    // 如果判断数据库余票数大于扣减不成功的数量
+                    if (tokenCount < each.getSeatCount()) {
+                        ticketAvailabilityTokenBucket.delTokenInBucket(requestParam);
+                        break;
+                    }
+                }
+            } finally {
+                lock.unlock();
+            }
+        }, 10, TimeUnit.SECONDS);
     }
 
     private List<String> buildDepartureStationList(List<TicketListDTO> seatResults) {
