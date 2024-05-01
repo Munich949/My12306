@@ -3,14 +3,18 @@ package com.dlnu.index12306.biz.orderservice.service.impl;
 import cn.hutool.core.collection.ListUtil;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.dlnu.index12306.biz.orderservice.common.enums.OrderCancelErrorCodeEnum;
+import com.dlnu.index12306.biz.orderservice.common.enums.OrderItemStatusEnum;
 import com.dlnu.index12306.biz.orderservice.common.enums.OrderStatusEnum;
 import com.dlnu.index12306.biz.orderservice.dao.entity.OrderDO;
 import com.dlnu.index12306.biz.orderservice.dao.entity.OrderItemDO;
 import com.dlnu.index12306.biz.orderservice.dao.entity.OrderItemPassengerDO;
 import com.dlnu.index12306.biz.orderservice.dao.mapper.OrderItemMapper;
 import com.dlnu.index12306.biz.orderservice.dao.mapper.OrderMapper;
+import com.dlnu.index12306.biz.orderservice.dto.req.CancelTicketOrderReqDTO;
 import com.dlnu.index12306.biz.orderservice.dto.req.TicketOrderCreateReqDTO;
 import com.dlnu.index12306.biz.orderservice.dto.req.TicketOrderItemCreateReqDTO;
 import com.dlnu.index12306.biz.orderservice.dto.req.TicketOrderPageQueryReqDTO;
@@ -23,6 +27,7 @@ import com.dlnu.index12306.biz.orderservice.service.OrderPassengerRelationServic
 import com.dlnu.index12306.biz.orderservice.service.OrderService;
 import com.dlnu.index12306.biz.orderservice.service.orderid.OrderIDGeneratorManager;
 import com.dlnu.index12306.framework.starter.common.toolkit.BeanUtil;
+import com.dlnu.index12306.framework.starter.convention.exception.ClientException;
 import com.dlnu.index12306.framework.starter.convention.exception.ServiceException;
 import com.dlnu.index12306.framework.starter.convention.page.PageResponse;
 import com.dlnu.index12306.framework.starter.database.toolkit.PageUtil;
@@ -30,11 +35,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.client.producer.SendStatus;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import static com.dlnu.index12306.biz.orderservice.common.constant.RedisKeyConstant.LOCK_CANCEL_ORDER;
 
 /**
  * 订单服务接口层实现
@@ -49,6 +58,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemService orderItemService;
     private final OrderPassengerRelationService orderPassengerRelationService;
     private final DelayCloseOrderSendProduce delayCloseOrderSendProduce;
+    private final RedissonClient redissonClient;
 
 
     @Override
@@ -150,6 +160,44 @@ public class OrderServiceImpl implements OrderService {
             throw ex;
         }
         return orderSn;
+    }
+
+    @Override
+    public boolean cancelTickOrder(CancelTicketOrderReqDTO requestParam) {
+        String orderSn = requestParam.getOrderSn();
+        LambdaQueryWrapper<OrderDO> queryWrapper = Wrappers.lambdaQuery(OrderDO.class)
+                .eq(OrderDO::getOrderSn, orderSn);
+        OrderDO orderDO = orderMapper.selectOne(queryWrapper);
+        if (orderDO == null) {
+            throw new ServiceException(OrderCancelErrorCodeEnum.ORDER_CANAL_UNKNOWN_ERROR);
+        } else if (orderDO.getStatus() != OrderStatusEnum.PENDING_PAYMENT.getStatus()) {
+            throw new ServiceException(OrderCancelErrorCodeEnum.ORDER_CANAL_STATUS_ERROR);
+        }
+        RLock lock = redissonClient.getLock(LOCK_CANCEL_ORDER + orderSn);
+        if (!lock.tryLock()) {
+            throw new ClientException(OrderCancelErrorCodeEnum.ORDER_CANAL_REPETITION_ERROR);
+        }
+        try {
+            OrderDO updateOrderDO = new OrderDO();
+            updateOrderDO.setStatus(OrderStatusEnum.CLOSED.getStatus());
+            LambdaUpdateWrapper<OrderDO> updateWrapper = Wrappers.lambdaUpdate(OrderDO.class)
+                    .eq(OrderDO::getOrderSn, orderSn);
+            int updateResult = orderMapper.update(updateOrderDO, updateWrapper);
+            if (updateResult <= 0) {
+                throw new ServiceException(OrderCancelErrorCodeEnum.ORDER_CANAL_ERROR);
+            }
+            OrderItemDO updateOrderItemDO = new OrderItemDO();
+            updateOrderItemDO.setStatus(OrderItemStatusEnum.CLOSED.getStatus());
+            LambdaUpdateWrapper<OrderItemDO> updateItemWrapper = Wrappers.lambdaUpdate(OrderItemDO.class)
+                    .eq(OrderItemDO::getOrderSn, orderSn);
+            int updateItemResult = orderItemMapper.update(updateOrderItemDO, updateItemWrapper);
+            if (updateItemResult <= 0) {
+                throw new ServiceException(OrderCancelErrorCodeEnum.ORDER_CANAL_ERROR);
+            }
+        } finally {
+            lock.unlock();
+        }
+        return true;
     }
 
 

@@ -1,5 +1,6 @@
 package com.dlnu.index12306.biz.orderservice.service;
 
+import com.dlnu.index12306.biz.orderservice.dto.req.CancelTicketOrderReqDTO;
 import com.dlnu.index12306.biz.orderservice.dto.req.TicketOrderCreateReqDTO;
 import com.dlnu.index12306.biz.orderservice.dto.req.TicketOrderPageQueryReqDTO;
 import com.dlnu.index12306.biz.orderservice.dto.resp.TicketOrderDetailRespDTO;
@@ -33,4 +34,11 @@ public interface OrderService {
      * @return 订单号
      */
     String createTicketOrder(TicketOrderCreateReqDTO requestParam);
+
+    /**
+     * 取消车票订单
+     *
+     * @param requestParam 取消车票订单入参
+     */
+    boolean cancelTickOrder(CancelTicketOrderReqDTO requestParam);
 }

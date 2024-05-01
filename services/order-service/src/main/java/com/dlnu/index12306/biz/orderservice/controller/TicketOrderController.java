@@ -18,6 +18,7 @@
 package com.dlnu.index12306.biz.orderservice.controller;
 
 import cn.crane4j.annotation.AutoOperate;
+import com.dlnu.index12306.biz.orderservice.dto.req.CancelTicketOrderReqDTO;
 import com.dlnu.index12306.biz.orderservice.dto.req.TicketOrderCreateReqDTO;
 import com.dlnu.index12306.biz.orderservice.dto.req.TicketOrderPageQueryReqDTO;
 import com.dlnu.index12306.biz.orderservice.dto.resp.TicketOrderDetailRespDTO;
@@ -60,5 +61,13 @@ public class TicketOrderController {
     @PostMapping("/api/order-service/order/ticket/create")
     public Result<String> createTicketOrder(@RequestBody TicketOrderCreateReqDTO requestParam) {
         return Results.success(orderService.createTicketOrder(requestParam));
+    }
+
+    /**
+     * 车票订单取消
+     */
+    @PostMapping("/api/order-service/order/ticket/cancel")
+    public Result<Boolean> cancelTickOrder(@RequestBody CancelTicketOrderReqDTO requestParam) {
+        return Results.success(orderService.cancelTickOrder(requestParam));
     }
 }
