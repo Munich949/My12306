@@ -17,6 +17,7 @@
 
 package com.dlnu.index12306.biz.ticketservice.controller;
 
+import com.dlnu.index12306.biz.ticketservice.dto.req.CancelTicketOrderReqDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.req.PurchaseTicketReqDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.req.TicketPageQueryReqDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.resp.TicketPageQueryRespDTO;
@@ -85,5 +86,15 @@ public class TicketController {
     @PostMapping("/api/ticket-service/ticket/purchase/v2")
     public Result<TicketPurchaseRespDTO> purchaseTicketsV2(@RequestBody PurchaseTicketReqDTO requestParam) {
         return Results.success(ticketService.purchaseTicketsV2(requestParam));
+    }
+
+    /**
+     * 取消车票订单
+     */
+    @ILog
+    @PostMapping("/api/ticket-service/ticket/cancel")
+    public Result<Void> cancelTicketOrder(@RequestBody CancelTicketOrderReqDTO requestParam) {
+        ticketService.cancelTicketOrder(requestParam);
+        return Results.success();
     }
 }

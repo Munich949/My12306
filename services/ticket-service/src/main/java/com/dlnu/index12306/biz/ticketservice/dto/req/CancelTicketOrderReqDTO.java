@@ -15,25 +15,22 @@
  * limitations under the License.
  */
 
-package com.dlnu.index12306.biz.ticketservice.remote;
+package com.dlnu.index12306.biz.ticketservice.dto.req;
 
-import com.dlnu.index12306.biz.ticketservice.remote.dto.PassengerRespDTO;
-import com.dlnu.index12306.framework.starter.convention.result.Result;
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-
-import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
- * 用户远程服务调用
+ * 取消车票订单请求入参
  */
-@FeignClient(value = "index12306-user-service")
-public interface UserRemoteService {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class CancelTicketOrderReqDTO {
 
     /**
-     * 根据乘车人 ID 集合查询乘车人列表
+     * 订单号
      */
-    @GetMapping("/api/user-service/inner/passenger/actual/query/ids")
-    Result<List<PassengerRespDTO>> listPassengerQueryByIds(@RequestParam("username") String username, @RequestParam("ids") List<String> ids);
+    private String orderSn;
 }

@@ -14,10 +14,8 @@ import com.dlnu.index12306.biz.ticketservice.common.enums.TicketStatusEnum;
 import com.dlnu.index12306.biz.ticketservice.common.enums.VehicleTypeEnum;
 import com.dlnu.index12306.biz.ticketservice.dao.entity.*;
 import com.dlnu.index12306.biz.ticketservice.dao.mapper.*;
-import com.dlnu.index12306.biz.ticketservice.dto.domain.PurchaseTicketPassengerDetailDTO;
-import com.dlnu.index12306.biz.ticketservice.dto.domain.SeatClassDTO;
-import com.dlnu.index12306.biz.ticketservice.dto.domain.SeatTypeCountDTO;
-import com.dlnu.index12306.biz.ticketservice.dto.domain.TicketListDTO;
+import com.dlnu.index12306.biz.ticketservice.dto.domain.*;
+import com.dlnu.index12306.biz.ticketservice.dto.req.CancelTicketOrderReqDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.req.PurchaseTicketReqDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.req.TicketPageQueryReqDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.resp.TicketOrderDetailRespDTO;
@@ -26,8 +24,10 @@ import com.dlnu.index12306.biz.ticketservice.dto.resp.TicketPurchaseRespDTO;
 import com.dlnu.index12306.biz.ticketservice.remote.TicketOrderRemoteService;
 import com.dlnu.index12306.biz.ticketservice.remote.dto.TicketOrderCreateRemoteReqDTO;
 import com.dlnu.index12306.biz.ticketservice.remote.dto.TicketOrderItemCreateRemoteReqDTO;
+import com.dlnu.index12306.biz.ticketservice.remote.dto.TicketOrderPassengerDetailRespDTO;
 import com.dlnu.index12306.biz.ticketservice.service.SeatService;
 import com.dlnu.index12306.biz.ticketservice.service.TicketService;
+import com.dlnu.index12306.biz.ticketservice.service.TrainStationService;
 import com.dlnu.index12306.biz.ticketservice.service.cache.SeatMarginCacheLoader;
 import com.dlnu.index12306.biz.ticketservice.service.handler.ticket.dto.TokenResultDTO;
 import com.dlnu.index12306.biz.ticketservice.service.handler.ticket.dto.TrainPurchaseTicketRespDTO;
@@ -38,6 +38,7 @@ import com.dlnu.index12306.biz.ticketservice.toolkit.TimeStringComparator;
 import com.dlnu.index12306.framework.starter.bases.ApplicationContextHolder;
 import com.dlnu.index12306.framework.starter.cache.DistributedCache;
 import com.dlnu.index12306.framework.starter.cache.toolkit.CacheUtil;
+import com.dlnu.index12306.framework.starter.common.toolkit.BeanUtil;
 import com.dlnu.index12306.framework.starter.convention.exception.ServiceException;
 import com.dlnu.index12306.framework.starter.convention.result.Result;
 import com.dlnu.index12306.framework.starter.designpattern.chain.AbstractChainContext;
@@ -86,6 +87,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketDO> imple
     private final RedissonClient redissonClient;
     private final TicketAvailabilityTokenBucket ticketAvailabilityTokenBucket;
     private final SeatService seatService;
+    private final TrainStationService trainStationService;
 
     private TicketService ticketService;
 
@@ -486,6 +488,46 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketDO> imple
             throw ex;
         }
         return new TicketPurchaseRespDTO(ticketOrderResult.getData(), ticketOrderDetailResults);
+    }
+
+    @Override
+    public void cancelTicketOrder(CancelTicketOrderReqDTO requestParam) {
+        // 远程调用订单模块 取消车票订单
+        Result<Void> cancelOrderResult = ticketOrderRemoteService.cancelTicketOrder(requestParam);
+        if (cancelOrderResult.isSuccess() && !StrUtil.equals(ticketAvailabilityCacheUpdateType, "binlog")) {
+            Result<com.dlnu.index12306.biz.ticketservice.remote.dto.TicketOrderDetailRespDTO> ticketOrderDetailResult = ticketOrderRemoteService.queryTicketOrderByOrderSn(requestParam.getOrderSn());
+            com.dlnu.index12306.biz.ticketservice.remote.dto.TicketOrderDetailRespDTO ticketOrderDetail = ticketOrderDetailResult.getData();
+            String trainId = String.valueOf(ticketOrderDetail.getTrainId());
+            String departure = ticketOrderDetail.getDeparture();
+            String arrival = ticketOrderDetail.getArrival();
+            List<TicketOrderPassengerDetailRespDTO> trainPurchaseTicketResults = ticketOrderDetail.getPassengerDetails();
+            try {
+                // 解锁抢占的座位
+                seatService.unlock(trainId, departure, arrival, BeanUtil.convert(trainPurchaseTicketResults, TrainPurchaseTicketRespDTO.class));
+            } catch (Throwable ex) {
+                log.error("[取消订单] 订单号：{} 回滚列车DB座位状态失败", requestParam.getOrderSn(), ex);
+                throw ex;
+            }
+            // 回滚令牌桶
+            ticketAvailabilityTokenBucket.rollbackInBucket(ticketOrderDetail);
+            try {
+                StringRedisTemplate stringRedisTemplate = (StringRedisTemplate) distributedCache.getInstance();
+                Map<Integer, List<TicketOrderPassengerDetailRespDTO>> seatTypeMap = trainPurchaseTicketResults.stream()
+                        .collect(Collectors.groupingBy(TicketOrderPassengerDetailRespDTO::getSeatType));
+                List<RouteDTO> routeDTOList = trainStationService.listTakeoutTrainStationRoute(trainId, departure, arrival);
+                // 增加列车余票缓存数量
+                routeDTOList.forEach(each -> {
+                    String keySuffix = StrUtil.join(StrUtil.UNDERLINE, trainId, each.getStartStation(), each.getEndStation());
+                    seatTypeMap.forEach((seatType, ticketOrderPassengerDetailRespDTOList) -> {
+                        stringRedisTemplate.opsForHash()
+                                .increment(TRAIN_STATION_REMAINING_TICKET + keySuffix, String.valueOf(seatType), ticketOrderPassengerDetailRespDTOList.size());
+                    });
+                });
+            } catch (Throwable ex) {
+                log.error("[取消关闭订单] 订单号：{} 回滚列车Cache余票失败", requestParam.getOrderSn(), ex);
+                throw ex;
+            }
+        }
     }
 
     private void tokenIsNullRefreshToken(PurchaseTicketReqDTO requestParam, TokenResultDTO tokenResult) {
