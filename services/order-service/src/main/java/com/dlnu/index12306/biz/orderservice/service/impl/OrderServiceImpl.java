@@ -14,14 +14,15 @@ import com.dlnu.index12306.biz.orderservice.dao.entity.OrderItemDO;
 import com.dlnu.index12306.biz.orderservice.dao.entity.OrderItemPassengerDO;
 import com.dlnu.index12306.biz.orderservice.dao.mapper.OrderItemMapper;
 import com.dlnu.index12306.biz.orderservice.dao.mapper.OrderMapper;
-import com.dlnu.index12306.biz.orderservice.dto.req.CancelTicketOrderReqDTO;
-import com.dlnu.index12306.biz.orderservice.dto.req.TicketOrderCreateReqDTO;
-import com.dlnu.index12306.biz.orderservice.dto.req.TicketOrderItemCreateReqDTO;
-import com.dlnu.index12306.biz.orderservice.dto.req.TicketOrderPageQueryReqDTO;
+import com.dlnu.index12306.biz.orderservice.dto.domain.OrderStatusReversalDTO;
+import com.dlnu.index12306.biz.orderservice.dto.req.*;
 import com.dlnu.index12306.biz.orderservice.dto.resp.TicketOrderDetailRespDTO;
+import com.dlnu.index12306.biz.orderservice.dto.resp.TicketOrderDetailSelfRespDTO;
 import com.dlnu.index12306.biz.orderservice.dto.resp.TicketOrderPassengerDetailRespDTO;
 import com.dlnu.index12306.biz.orderservice.mq.event.DelayCloseOrderEvent;
 import com.dlnu.index12306.biz.orderservice.mq.produce.DelayCloseOrderSendProduce;
+import com.dlnu.index12306.biz.orderservice.remote.UserRemoteService;
+import com.dlnu.index12306.biz.orderservice.remote.dto.UserQueryActualRespDTO;
 import com.dlnu.index12306.biz.orderservice.service.OrderItemService;
 import com.dlnu.index12306.biz.orderservice.service.OrderPassengerRelationService;
 import com.dlnu.index12306.biz.orderservice.service.OrderService;
@@ -30,7 +31,9 @@ import com.dlnu.index12306.framework.starter.common.toolkit.BeanUtil;
 import com.dlnu.index12306.framework.starter.convention.exception.ClientException;
 import com.dlnu.index12306.framework.starter.convention.exception.ServiceException;
 import com.dlnu.index12306.framework.starter.convention.page.PageResponse;
+import com.dlnu.index12306.framework.starter.convention.result.Result;
 import com.dlnu.index12306.framework.starter.database.toolkit.PageUtil;
+import com.dlnu.index12306.framework.starter.user.core.UserContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.producer.SendResult;
@@ -45,6 +48,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.dlnu.index12306.biz.orderservice.common.constant.RedisKeyConstant.LOCK_CANCEL_ORDER;
+import static com.dlnu.index12306.biz.orderservice.common.constant.RedisKeyConstant.LOCK_STATUS_REVERSAL;
 
 /**
  * 订单服务接口层实现
@@ -60,6 +64,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderPassengerRelationService orderPassengerRelationService;
     private final DelayCloseOrderSendProduce delayCloseOrderSendProduce;
     private final RedissonClient redissonClient;
+    private final UserRemoteService userRemoteService;
 
 
     @Override
@@ -218,6 +223,62 @@ public class OrderServiceImpl implements OrderService {
         return cancelTickOrder(requestParam);
     }
 
+    @Override
+    public void statusReversal(OrderStatusReversalDTO requestParam) {
+        LambdaQueryWrapper<OrderDO> queryWrapper = Wrappers.lambdaQuery(OrderDO.class)
+                .eq(OrderDO::getOrderSn, requestParam.getOrderSn());
+        OrderDO orderDO = orderMapper.selectOne(queryWrapper);
+        if (orderDO == null) {
+            throw new ServiceException(OrderCancelErrorCodeEnum.ORDER_CANAL_UNKNOWN_ERROR);
+        } else if (orderDO.getStatus() != OrderStatusEnum.PENDING_PAYMENT.getStatus()) {
+            throw new ServiceException(OrderCancelErrorCodeEnum.ORDER_CANAL_STATUS_ERROR);
+        }
+        RLock lock = redissonClient.getLock(LOCK_STATUS_REVERSAL + requestParam.getOrderSn());
+        if (!lock.tryLock()) {
+            log.warn("订单重复修改状态，状态反转请求参数：{}", JSON.toJSONString(requestParam));
+        }
+        try {
+            OrderDO updateOrderDO = new OrderDO();
+            updateOrderDO.setStatus(requestParam.getOrderStatus());
+            LambdaUpdateWrapper<OrderDO> updateWrapper = Wrappers.lambdaUpdate(OrderDO.class)
+                    .eq(OrderDO::getOrderSn, requestParam.getOrderSn());
+            int updateResult = orderMapper.update(updateOrderDO, updateWrapper);
+            if (updateResult <= 0) {
+                throw new ServiceException(OrderCancelErrorCodeEnum.ORDER_STATUS_REVERSAL_ERROR);
+            }
+            OrderItemDO orderItemDO = new OrderItemDO();
+            orderItemDO.setStatus(requestParam.getOrderItemStatus());
+            LambdaUpdateWrapper<OrderItemDO> orderItemUpdateWrapper = Wrappers.lambdaUpdate(OrderItemDO.class)
+                    .eq(OrderItemDO::getOrderSn, requestParam.getOrderSn());
+            int orderItemUpdateResult = orderItemMapper.update(orderItemDO, orderItemUpdateWrapper);
+            if (orderItemUpdateResult <= 0) {
+                throw new ServiceException(OrderCancelErrorCodeEnum.ORDER_STATUS_REVERSAL_ERROR);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public PageResponse<TicketOrderDetailSelfRespDTO> pageSelfTicketOrder(TicketOrderSelfPageQueryReqDTO requestParam) {
+        Result<UserQueryActualRespDTO> userActualResp = userRemoteService.queryActualUserByUsername(UserContext.getUsername());
+        LambdaQueryWrapper<OrderItemPassengerDO> queryWrapper = Wrappers.lambdaQuery(OrderItemPassengerDO.class)
+                .eq(OrderItemPassengerDO::getIdCard, userActualResp.getData().getIdCard())
+                .orderByDesc(OrderItemPassengerDO::getCreateTime);
+        IPage<OrderItemPassengerDO> orderItemPassengerPage = orderPassengerRelationService.page(PageUtil.convert(requestParam), queryWrapper);
+        return PageUtil.convert(orderItemPassengerPage, each -> {
+            LambdaQueryWrapper<OrderDO> orderQueryWrapper = Wrappers.lambdaQuery(OrderDO.class)
+                    .eq(OrderDO::getOrderSn, each.getOrderSn());
+            OrderDO orderDO = orderMapper.selectOne(orderQueryWrapper);
+            LambdaQueryWrapper<OrderItemDO> orderItemQueryWrapper = Wrappers.lambdaQuery(OrderItemDO.class)
+                    .eq(OrderItemDO::getOrderSn, each.getOrderSn())
+                    .eq(OrderItemDO::getIdCard, each.getIdCard());
+            OrderItemDO orderItemDO = orderItemMapper.selectOne(orderItemQueryWrapper);
+            TicketOrderDetailSelfRespDTO actualResult = BeanUtil.convert(orderDO, TicketOrderDetailSelfRespDTO.class);
+            BeanUtil.convertIgnoreNullAndBlank(orderItemDO, actualResult);
+            return actualResult;
+        });
+    }
 
     private List<Integer> buildOrderStatusList(TicketOrderPageQueryReqDTO requestParam) {
         List<Integer> result = new ArrayList<>();

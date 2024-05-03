@@ -1,9 +1,12 @@
 package com.dlnu.index12306.biz.orderservice.service;
 
+import com.dlnu.index12306.biz.orderservice.dto.domain.OrderStatusReversalDTO;
 import com.dlnu.index12306.biz.orderservice.dto.req.CancelTicketOrderReqDTO;
 import com.dlnu.index12306.biz.orderservice.dto.req.TicketOrderCreateReqDTO;
 import com.dlnu.index12306.biz.orderservice.dto.req.TicketOrderPageQueryReqDTO;
+import com.dlnu.index12306.biz.orderservice.dto.req.TicketOrderSelfPageQueryReqDTO;
 import com.dlnu.index12306.biz.orderservice.dto.resp.TicketOrderDetailRespDTO;
+import com.dlnu.index12306.biz.orderservice.dto.resp.TicketOrderDetailSelfRespDTO;
 import com.dlnu.index12306.framework.starter.convention.page.PageResponse;
 
 /**
@@ -48,4 +51,19 @@ public interface OrderService {
      * @param requestParam 关闭火车票订单入参
      */
     boolean closeTickOrder(CancelTicketOrderReqDTO requestParam);
+
+    /**
+     * 订单状态反转
+     *
+     * @param requestParam 请求参数
+     */
+    void statusReversal(OrderStatusReversalDTO requestParam);
+
+    /**
+     * 查询本人车票订单
+     *
+     * @param requestParam 请求参数
+     * @return 本人车票订单集合
+     */
+    PageResponse<TicketOrderDetailSelfRespDTO> pageSelfTicketOrder(TicketOrderSelfPageQueryReqDTO requestParam);
 }
