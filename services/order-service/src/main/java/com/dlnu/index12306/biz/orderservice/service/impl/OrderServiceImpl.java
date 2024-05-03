@@ -203,6 +203,21 @@ public class OrderServiceImpl implements OrderService {
         return true;
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public boolean closeTickOrder(CancelTicketOrderReqDTO requestParam) {
+        String orderSn = requestParam.getOrderSn();
+        LambdaQueryWrapper<OrderDO> queryWrapper = Wrappers.lambdaQuery(OrderDO.class)
+                .eq(OrderDO::getOrderSn, orderSn)
+                .select(OrderDO::getStatus);
+        OrderDO orderDO = orderMapper.selectOne(queryWrapper);
+        if (Objects.isNull(orderDO) || orderDO.getStatus() != OrderStatusEnum.PENDING_PAYMENT.getStatus()) {
+            return false;
+        }
+        // 原则上订单关闭和订单取消这两个方法可以复用，为了区分未来考虑到的场景，这里对方法进行拆分但复用逻辑
+        return cancelTickOrder(requestParam);
+    }
+
 
     private List<Integer> buildOrderStatusList(TicketOrderPageQueryReqDTO requestParam) {
         List<Integer> result = new ArrayList<>();
