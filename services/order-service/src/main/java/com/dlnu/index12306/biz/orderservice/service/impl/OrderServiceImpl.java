@@ -38,6 +38,7 @@ import org.apache.rocketmq.client.producer.SendStatus;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -91,6 +92,7 @@ public class OrderServiceImpl implements OrderService {
         });
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public String createTicketOrder(TicketOrderCreateReqDTO requestParam) {
         // 通过基因法将用户 ID 融入到订单号中
@@ -162,6 +164,7 @@ public class OrderServiceImpl implements OrderService {
         return orderSn;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public boolean cancelTickOrder(CancelTicketOrderReqDTO requestParam) {
         String orderSn = requestParam.getOrderSn();
