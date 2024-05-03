@@ -20,14 +20,19 @@ package com.dlnu.index12306.biz.orderservice.controller;
 import cn.crane4j.annotation.AutoOperate;
 import com.dlnu.index12306.biz.orderservice.dto.req.CancelTicketOrderReqDTO;
 import com.dlnu.index12306.biz.orderservice.dto.req.TicketOrderCreateReqDTO;
+import com.dlnu.index12306.biz.orderservice.dto.req.TicketOrderItemQueryReqDTO;
 import com.dlnu.index12306.biz.orderservice.dto.req.TicketOrderPageQueryReqDTO;
 import com.dlnu.index12306.biz.orderservice.dto.resp.TicketOrderDetailRespDTO;
+import com.dlnu.index12306.biz.orderservice.dto.resp.TicketOrderPassengerDetailRespDTO;
+import com.dlnu.index12306.biz.orderservice.service.OrderItemService;
 import com.dlnu.index12306.biz.orderservice.service.OrderService;
 import com.dlnu.index12306.framework.starter.convention.page.PageResponse;
 import com.dlnu.index12306.framework.starter.convention.result.Result;
 import com.dlnu.index12306.framework.starter.web.Results;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 车票订单接口控制层
@@ -37,6 +42,7 @@ import org.springframework.web.bind.annotation.*;
 public class TicketOrderController {
 
     private final OrderService orderService;
+    private final OrderItemService orderItemService;
 
     /**
      * 根据订单号查询车票订单
@@ -53,6 +59,14 @@ public class TicketOrderController {
     @GetMapping("/api/order-service/order/ticket/page")
     public Result<PageResponse<TicketOrderDetailRespDTO>> pageTicketOrder(TicketOrderPageQueryReqDTO requestParam) {
         return Results.success(orderService.pageTicketOrder(requestParam));
+    }
+
+    /**
+     * 根据子订单记录id查询车票子订单详情
+     */
+    @GetMapping("/api/order-service/order/item/ticket/query")
+    public Result<List<TicketOrderPassengerDetailRespDTO>> queryTicketItemOrderById(TicketOrderItemQueryReqDTO requestParam) {
+        return Results.success(orderItemService.queryTicketItemOrderById(requestParam));
     }
 
     /**
