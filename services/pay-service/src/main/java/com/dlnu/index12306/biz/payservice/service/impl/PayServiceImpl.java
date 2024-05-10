@@ -1,13 +1,18 @@
 package com.dlnu.index12306.biz.payservice.service.impl;
 
 import com.alibaba.fastjson2.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.dlnu.index12306.biz.payservice.common.enums.TradeStatusEnum;
 import com.dlnu.index12306.biz.payservice.dao.entity.PayDO;
 import com.dlnu.index12306.biz.payservice.dao.mapper.PayMapper;
 import com.dlnu.index12306.biz.payservice.dto.base.PayRequest;
 import com.dlnu.index12306.biz.payservice.dto.base.PayResponse;
+import com.dlnu.index12306.biz.payservice.dto.req.PayCallbackReqDTO;
 import com.dlnu.index12306.biz.payservice.dto.resp.PayRespDTO;
 import com.dlnu.index12306.biz.payservice.handler.AliPayNativeHandler;
+import com.dlnu.index12306.biz.payservice.mq.event.PayResultCallbackOrderEvent;
 import com.dlnu.index12306.biz.payservice.mq.produce.PayResultCallbackOrderSendProduce;
 import com.dlnu.index12306.biz.payservice.service.PayService;
 import com.dlnu.index12306.biz.payservice.service.payid.PayIdGeneratorManager;
@@ -21,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static com.dlnu.index12306.biz.payservice.common.constant.RedisKeyConstant.ORDER_PAY_RESULT_INFO;
@@ -62,5 +68,32 @@ public class PayServiceImpl implements PayService {
         }
         distributedCache.put(ORDER_PAY_RESULT_INFO + requestParam.getOrderSn(), JSON.toJSONString(result), 10, TimeUnit.MINUTES);
         return BeanUtil.convert(result, PayRespDTO.class);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void callbackPay(PayCallbackReqDTO requestParam) {
+        LambdaQueryWrapper<PayDO> queryWrapper = Wrappers.lambdaQuery(PayDO.class)
+                .eq(PayDO::getOrderSn, requestParam.getOrderSn());
+        PayDO payDO = payMapper.selectOne(queryWrapper);
+        if (Objects.isNull(payDO)) {
+            log.error("支付单不存在，orderRequestId：{}", requestParam.getOrderRequestId());
+            throw new ServiceException("支付单不存在");
+        }
+        payDO.setTradeNo(requestParam.getTradeNo());
+        payDO.setStatus(requestParam.getStatus());
+        payDO.setPayAmount(requestParam.getPayAmount());
+        payDO.setGmtPayment(requestParam.getGmtPayment());
+        LambdaUpdateWrapper<PayDO> updateWrapper = Wrappers.lambdaUpdate(PayDO.class)
+                .eq(PayDO::getOrderSn, requestParam.getOrderSn());
+        int result = payMapper.update(payDO, updateWrapper);
+        if (result <= 0) {
+            log.error("修改支付单支付结果失败，支付单信息：{}", JSON.toJSONString(payDO));
+            throw new ServiceException("修改支付单支付结果失败");
+        }
+        // 交易成功，回调订单服务告知支付结果，修改订单流转状态
+        if (Objects.equals(requestParam.getStatus(), TradeStatusEnum.TRADE_SUCCESS.tradeCode())) {
+            payResultCallbackOrderSendProduce.sendMessage(BeanUtil.convert(payDO, PayResultCallbackOrderEvent.class));
+        }
     }
 }
