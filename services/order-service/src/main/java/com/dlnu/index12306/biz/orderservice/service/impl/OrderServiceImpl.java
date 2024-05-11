@@ -20,6 +20,7 @@ import com.dlnu.index12306.biz.orderservice.dto.resp.TicketOrderDetailRespDTO;
 import com.dlnu.index12306.biz.orderservice.dto.resp.TicketOrderDetailSelfRespDTO;
 import com.dlnu.index12306.biz.orderservice.dto.resp.TicketOrderPassengerDetailRespDTO;
 import com.dlnu.index12306.biz.orderservice.mq.event.DelayCloseOrderEvent;
+import com.dlnu.index12306.biz.orderservice.mq.event.PayResultCallbackOrderEvent;
 import com.dlnu.index12306.biz.orderservice.mq.produce.DelayCloseOrderSendProduce;
 import com.dlnu.index12306.biz.orderservice.remote.UserRemoteService;
 import com.dlnu.index12306.biz.orderservice.remote.dto.UserQueryActualRespDTO;
@@ -256,6 +257,19 @@ public class OrderServiceImpl implements OrderService {
             }
         } finally {
             lock.unlock();
+        }
+    }
+
+    @Override
+    public void payCallbackOrder(PayResultCallbackOrderEvent requestParam) {
+        OrderDO updateOrderDO = new OrderDO();
+        updateOrderDO.setPayTime(requestParam.getGmtPayment());
+        updateOrderDO.setPayType(requestParam.getChannel());
+        LambdaUpdateWrapper<OrderDO> updateWrapper = Wrappers.lambdaUpdate(OrderDO.class)
+                .eq(OrderDO::getOrderSn, requestParam.getOrderSn());
+        int updateResult = orderMapper.update(updateOrderDO, updateWrapper);
+        if (updateResult <= 0) {
+            throw new ServiceException(OrderCancelErrorCodeEnum.ORDER_STATUS_REVERSAL_ERROR);
         }
     }
 
