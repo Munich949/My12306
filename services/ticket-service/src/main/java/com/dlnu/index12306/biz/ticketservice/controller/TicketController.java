@@ -19,9 +19,12 @@ package com.dlnu.index12306.biz.ticketservice.controller;
 
 import com.dlnu.index12306.biz.ticketservice.dto.req.CancelTicketOrderReqDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.req.PurchaseTicketReqDTO;
+import com.dlnu.index12306.biz.ticketservice.dto.req.RefundTicketReqDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.req.TicketPageQueryReqDTO;
+import com.dlnu.index12306.biz.ticketservice.dto.resp.RefundTicketRespDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.resp.TicketPageQueryRespDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.resp.TicketPurchaseRespDTO;
+import com.dlnu.index12306.biz.ticketservice.remote.dto.PayInfoRespDTO;
 import com.dlnu.index12306.biz.ticketservice.service.TicketService;
 import com.dlnu.index12306.framework.starter.convention.result.Result;
 import com.dlnu.index12306.framework.starter.idempotent.annotation.Idempotent;
@@ -30,10 +33,7 @@ import com.dlnu.index12306.framework.starter.idempotent.enums.IdempotentTypeEnum
 import com.dlnu.index12306.framework.starter.log.annotation.ILog;
 import com.dlnu.index12306.framework.starter.web.Results;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 车票控制层
@@ -96,5 +96,21 @@ public class TicketController {
     public Result<Void> cancelTicketOrder(@RequestBody CancelTicketOrderReqDTO requestParam) {
         ticketService.cancelTicketOrder(requestParam);
         return Results.success();
+    }
+
+    /**
+     * 支付单详情查询
+     */
+    @GetMapping("/api/ticket-service/ticket/pay/query")
+    public Result<PayInfoRespDTO> getPayInfo(@RequestParam(value = "orderSn") String orderSn) {
+        return Results.success(ticketService.getPayInfo(orderSn));
+    }
+
+    /**
+     * 公共退款接口
+     */
+    @PostMapping("/api/ticket-service/ticket/refund")
+    public Result<RefundTicketRespDTO> commonTicketRefund(@RequestBody RefundTicketReqDTO requestParam) {
+        return Results.success(ticketService.commonTicketRefund(requestParam));
     }
 }

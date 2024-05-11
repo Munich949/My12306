@@ -8,23 +8,21 @@ import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.dlnu.index12306.biz.ticketservice.common.enums.SourceEnum;
-import com.dlnu.index12306.biz.ticketservice.common.enums.TicketChainMarkEnum;
-import com.dlnu.index12306.biz.ticketservice.common.enums.TicketStatusEnum;
-import com.dlnu.index12306.biz.ticketservice.common.enums.VehicleTypeEnum;
+import com.dlnu.index12306.biz.ticketservice.common.enums.*;
 import com.dlnu.index12306.biz.ticketservice.dao.entity.*;
 import com.dlnu.index12306.biz.ticketservice.dao.mapper.*;
 import com.dlnu.index12306.biz.ticketservice.dto.domain.*;
 import com.dlnu.index12306.biz.ticketservice.dto.req.CancelTicketOrderReqDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.req.PurchaseTicketReqDTO;
+import com.dlnu.index12306.biz.ticketservice.dto.req.RefundTicketReqDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.req.TicketPageQueryReqDTO;
+import com.dlnu.index12306.biz.ticketservice.dto.resp.RefundTicketRespDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.resp.TicketOrderDetailRespDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.resp.TicketPageQueryRespDTO;
 import com.dlnu.index12306.biz.ticketservice.dto.resp.TicketPurchaseRespDTO;
+import com.dlnu.index12306.biz.ticketservice.remote.PayRemoteService;
 import com.dlnu.index12306.biz.ticketservice.remote.TicketOrderRemoteService;
-import com.dlnu.index12306.biz.ticketservice.remote.dto.TicketOrderCreateRemoteReqDTO;
-import com.dlnu.index12306.biz.ticketservice.remote.dto.TicketOrderItemCreateRemoteReqDTO;
-import com.dlnu.index12306.biz.ticketservice.remote.dto.TicketOrderPassengerDetailRespDTO;
+import com.dlnu.index12306.biz.ticketservice.remote.dto.*;
 import com.dlnu.index12306.biz.ticketservice.service.SeatService;
 import com.dlnu.index12306.biz.ticketservice.service.TicketService;
 import com.dlnu.index12306.biz.ticketservice.service.TrainStationService;
@@ -84,10 +82,12 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketDO> imple
     private final TrainSeatTypeSelector trainSeatTypeSelector;
     private final AbstractChainContext<TicketPageQueryReqDTO> ticketPageQueryAbstractChainContext;
     private final AbstractChainContext<PurchaseTicketReqDTO> purchaseTicketAbstractChainContext;
+    private final AbstractChainContext<RefundTicketReqDTO> refundTicketAbstractChainContext;
     private final RedissonClient redissonClient;
     private final TicketAvailabilityTokenBucket ticketAvailabilityTokenBucket;
     private final SeatService seatService;
     private final TrainStationService trainStationService;
+    private final PayRemoteService payRemoteService;
 
     private TicketService ticketService;
 
@@ -528,6 +528,57 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketDO> imple
                 throw ex;
             }
         }
+    }
+
+    @Override
+    public PayInfoRespDTO getPayInfo(String orderSn) {
+        return payRemoteService.getPayInfo(orderSn).getData();
+    }
+
+    @Override
+    public RefundTicketRespDTO commonTicketRefund(RefundTicketReqDTO requestParam) {
+        // 责任链模式，验证 1：参数必填
+        refundTicketAbstractChainContext.handler(TicketChainMarkEnum.TRAIN_REFUND_TICKET_FILTER.name(), requestParam);
+        Result<com.dlnu.index12306.biz.ticketservice.remote.dto.TicketOrderDetailRespDTO> orderDetailRespDTOResult = ticketOrderRemoteService.queryTicketOrderByOrderSn(requestParam.getOrderSn());
+        if (!orderDetailRespDTOResult.isSuccess() && Objects.isNull(orderDetailRespDTOResult.getData())) {
+            throw new ServiceException("车票订单不存在");
+        }
+        com.dlnu.index12306.biz.ticketservice.remote.dto.TicketOrderDetailRespDTO ticketOrderDetailRespDTO = orderDetailRespDTOResult.getData();
+        List<TicketOrderPassengerDetailRespDTO> passengerDetails = ticketOrderDetailRespDTO.getPassengerDetails();
+        if (CollUtil.isEmpty(passengerDetails)) {
+            throw new ServiceException("车票子订单不存在");
+        }
+        RefundReqDTO refundReqDTO = new RefundReqDTO();
+        // 部分退款
+        if (RefundTypeEnum.PARTIAL_REFUND.getType().equals(requestParam.getType())) {
+            TicketOrderItemQueryReqDTO ticketOrderItemQueryReqDTO = new TicketOrderItemQueryReqDTO();
+            ticketOrderItemQueryReqDTO.setOrderSn(requestParam.getOrderSn());
+            ticketOrderItemQueryReqDTO.setOrderItemRecordIds(requestParam.getSubOrderRecordIdReqList());
+            // 查询订单中部分退款所对应的子订单
+            Result<List<TicketOrderPassengerDetailRespDTO>> ticketItemOrderResult = ticketOrderRemoteService.queryTicketItemOrderById(ticketOrderItemQueryReqDTO);
+            List<TicketOrderPassengerDetailRespDTO> partialRefundPassengerDetails = passengerDetails.stream()
+                    .filter(item -> ticketItemOrderResult.getData().contains(item))
+                    .toList();
+            refundReqDTO.setRefundTypeEnum(RefundTypeEnum.PARTIAL_REFUND);
+            refundReqDTO.setRefundDetailReqDTOList(partialRefundPassengerDetails);
+        } else if (RefundTypeEnum.FULL_REFUND.getType().equals(requestParam.getType())) {
+            // 全部退款
+            refundReqDTO.setRefundTypeEnum(RefundTypeEnum.FULL_REFUND);
+            refundReqDTO.setRefundDetailReqDTOList(passengerDetails);
+        }
+        if (CollUtil.isNotEmpty(passengerDetails)) {
+            Integer partialRefundAmount = passengerDetails.stream()
+                    .mapToInt(TicketOrderPassengerDetailRespDTO::getAmount)
+                    .sum();
+            refundReqDTO.setRefundAmount(partialRefundAmount);
+        }
+        refundReqDTO.setOrderSn(requestParam.getOrderSn());
+        Result<RefundRespDTO> refundResult = payRemoteService.commonRefund(refundReqDTO);
+        if (!refundResult.isSuccess() && Objects.isNull(refundResult.getData())) {
+            throw new ServiceException("车票订单退款失败");
+        }
+        // 暂时返回空实体
+        return null;
     }
 
     private void tokenIsNullRefreshToken(PurchaseTicketReqDTO requestParam, TokenResultDTO tokenResult) {
