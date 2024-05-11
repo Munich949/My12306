@@ -10,6 +10,7 @@ import com.dlnu.index12306.biz.payservice.dao.mapper.PayMapper;
 import com.dlnu.index12306.biz.payservice.dto.base.PayRequest;
 import com.dlnu.index12306.biz.payservice.dto.base.PayResponse;
 import com.dlnu.index12306.biz.payservice.dto.req.PayCallbackReqDTO;
+import com.dlnu.index12306.biz.payservice.dto.resp.PayInfoRespDTO;
 import com.dlnu.index12306.biz.payservice.dto.resp.PayRespDTO;
 import com.dlnu.index12306.biz.payservice.handler.AliPayNativeHandler;
 import com.dlnu.index12306.biz.payservice.mq.event.PayResultCallbackOrderEvent;
@@ -95,5 +96,21 @@ public class PayServiceImpl implements PayService {
         if (Objects.equals(requestParam.getStatus(), TradeStatusEnum.TRADE_SUCCESS.tradeCode())) {
             payResultCallbackOrderSendProduce.sendMessage(BeanUtil.convert(payDO, PayResultCallbackOrderEvent.class));
         }
+    }
+
+    @Override
+    public PayInfoRespDTO getPayInfoByOrderSn(String orderSn) {
+        LambdaQueryWrapper<PayDO> queryWrapper = Wrappers.lambdaQuery(PayDO.class)
+                .eq(PayDO::getOrderSn, orderSn);
+        PayDO payDO = payMapper.selectOne(queryWrapper);
+        return BeanUtil.convert(payDO, PayInfoRespDTO.class);
+    }
+
+    @Override
+    public PayInfoRespDTO getPayInfoByPaySn(String paySn) {
+        LambdaQueryWrapper<PayDO> queryWrapper = Wrappers.lambdaQuery(PayDO.class)
+                .eq(PayDO::getPaySn, paySn);
+        PayDO payDO = payMapper.selectOne(queryWrapper);
+        return BeanUtil.convert(payDO, PayInfoRespDTO.class);
     }
 }
