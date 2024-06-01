@@ -84,9 +84,8 @@ public final class IdempotentParamExecuteHandler extends AbstractIdempotentExecu
      * @return 方法参数的 MD5 值
      */
     private String calcArgsMD5(ProceedingJoinPoint joinPoint) {
-        String md5 = DigestUtil.md5Hex(JSON.toJSONBytes(joinPoint.getArgs()));
         // 计算参数的 MD5 值
-        return md5;
+        return DigestUtil.md5Hex(JSON.toJSONBytes(joinPoint.getArgs()));
     }
 
     /**
