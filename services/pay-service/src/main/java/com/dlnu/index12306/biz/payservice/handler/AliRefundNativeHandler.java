@@ -19,7 +19,7 @@ package com.dlnu.index12306.biz.payservice.handler;
 
 import cn.hutool.core.text.StrBuilder;
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.AlipayConfig;
