@@ -54,7 +54,7 @@
             <div style="font-weight: bolder">
               {{
                 moment(item?.ridingDate ?? new Date()).isAfter(moment())
-                  ? '未出战'
+                  ? '未出站'
                   : '已出站'
               }}
             </div>
