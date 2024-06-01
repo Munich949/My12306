@@ -20,6 +20,7 @@ package com.dlnu.index12306.biz.ticketservice.dto.req;
 import com.dlnu.index12306.biz.ticketservice.dto.domain.PurchaseTicketPassengerDetailDTO;
 import lombok.Data;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -52,4 +53,16 @@ public class PurchaseTicketReqDTO {
      * 到达站点
      */
     private String arrival;
+
+    /**
+     * 出发时间
+     */
+//    @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm")
+    private Date departureTime;
+
+    /**
+     * 到达时间
+     */
+//    @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm")
+    private Date arrivalTime;
 }
