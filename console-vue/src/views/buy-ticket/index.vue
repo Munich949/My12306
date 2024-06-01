@@ -23,7 +23,7 @@
           <span class="important-text">{{ state.currTrain?.arrival }}</span>
           <span class="small-text">站</span>
           <span class="important-text"
-            >（{{ state.currTrain?.duration }}到）</span
+            >（{{ state.currTrain?.arrivalTime }}到）</span
           >
         </div>
         <Divider dashed></Divider>
@@ -231,7 +231,7 @@
           <span class="important-text">{{ state.currTrain?.arrival }}</span>
           <span class="small-text">站</span>
           <span class="important-text"
-            >（{{ state.currTrain?.duration }}到）</span
+            >（{{ state.currTrain?.arrivalTime }}到）</span
           >
         </div>
         <Table
@@ -645,13 +645,26 @@ const handleSubmitBuyTicket = () => {
     passengerId: item.id,
     seatType: item.seatType
   }))
+
+  const departureTime = `${query.departureDate} ${state.currTrain.departureTime}`;
+  const duration = state.currTrain?.duration;
+
+  const [hours, minutes] = duration.split(":").map(Number);
+  const durationInMinutes = hours * 60 + minutes;
+  const departureDate = dayjs(departureTime);
+  const arrivalTime = departureDate.add(durationInMinutes, 'minute');
+  const arrivalDate = arrivalTime.format();
+
   params = {
     ...params,
     passengers,
     chooseSeats: toRaw(state.currentSeatCode),
     departure: state.currTrain?.departure,
-    arrival: state.currTrain?.arrival
+    arrival: state.currTrain?.arrival,
+    departureTime: departureDate,
+    arrivalTime: arrivalDate
   }
+
   state.loading = true
   fetchBuyTicket(params)
     .then((res) => {
